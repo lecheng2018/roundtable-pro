@@ -1091,11 +1091,21 @@ async function showHistoryDetail(hid) {
     let reportHtml = '';
     if (d.report) {
       const r = d.report;
+      // Safety: if summary looks like nested JSON, try to extract clean text
+      let summaryText = r.summary || '';
+      if (typeof summaryText === 'string' && summaryText.trim().startsWith('{')) {
+        try {
+          const parsed = JSON.parse(summaryText);
+          summaryText = parsed.summary || parsed.text || parsed.conclusion || summaryText;
+        } catch(e) { /* keep original */ }
+      }
+      const cons = (r.consensus && r.consensus.length) ? r.consensus : [];
+      const recs = (r.recommendations && r.recommendations.length) ? r.recommendations : [];
       reportHtml = `<div class="history-detail-report">
         <h4>📊 讨论总结</h4>
-        <div class="hd-summary">${r.summary||''}</div>
-        ${r.consensus && r.consensus.length ? `<h4>✅ 共识</h4><ul>${r.consensus.map(c => '<li>'+c+'</li>').join('')}</ul>` : ''}
-        ${r.recommendations && r.recommendations.length ? `<h4>💡 建议</h4><ul>${r.recommendations.map(c => '<li>'+c+'</li>').join('')}</ul>` : ''}
+        <div class="hd-summary">${summaryText}</div>
+        ${cons.length ? `<h4>✅ 共识</h4><ul>${cons.map(c => '<li>'+c+'</li>').join('')}</ul>` : ''}
+        ${recs.length ? `<h4>💡 建议</h4><ul>${recs.map(r => '<li>'+r+'</li>').join('')}</ul>` : ''}
       </div>`;
     }
 

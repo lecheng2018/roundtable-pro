@@ -353,16 +353,25 @@ async def run_roundtable(provider_manager, req: DiscussRequest, stream: EventStr
                 "recommendations": []
             }
         else:
-            # Normalize: ensure summary is always a plain string, not a nested dict
-            if isinstance(report_data.get("summary"), dict):
-                nested = report_data["summary"]
-                report_data["summary"] = nested.get("summary") or nested.get("text") or judge_text
-                if not report_data.get("consensus") and nested.get("consensus"):
-                    report_data["consensus"] = nested["consensus"]
-                if not report_data.get("recommendations") and nested.get("recommendations"):
-                    report_data["recommendations"] = nested["recommendations"]
-            elif isinstance(report_data.get("summary"), list):
-                report_data["summary"] = " ".join(str(x) for x in report_data["summary"])
+            # Normalize: recursively extract plain string from nested summary
+            # Handles cases where LLM returns summary: {summary: {summary: "..."}}
+            import copy
+            def _unwrap(rd: dict) -> dict:
+                """Recursively unwrap nested summary/consensus/recommendations."""
+                rd = copy.deepcopy(rd)
+                # Unwrap summary until it's a plain string
+                while isinstance(rd.get("summary"), dict | list):
+                    if isinstance(rd["summary"], dict):
+                        nested = rd["summary"]
+                        if not rd.get("consensus") and nested.get("consensus"):
+                            rd["consensus"] = nested["consensus"]
+                        if not rd.get("recommendations") and nested.get("recommendations"):
+                            rd["recommendations"] = nested["recommendations"]
+                        rd["summary"] = nested.get("summary") or nested.get("text") or judge_text
+                    elif isinstance(rd["summary"], list):
+                        rd["summary"] = " ".join(str(x) for x in rd["summary"])
+                return rd
+            report_data = _unwrap(report_data)
     except Exception as e:
         report_data = {
             "summary": f"总结生成失败：{str(e)}",
