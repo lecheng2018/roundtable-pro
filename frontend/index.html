@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>圆桌 Pro</title>
+<style>
+:root{--bg:#0f172a;--panel:#1e293b;--text:#e2e8f0;--muted:#94a3b8;--primary:#3b82f6;--primary-dim:#1d4ed8;--danger:#ef4444;--success:#22c55e;--warn:#f59e0b;--border:#334155;--radius:10px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;font-size:14px;line-height:1.6;overflow-x:hidden}
+.rt-container{max-width:1200px;margin:0 auto;padding:16px}
+/* Tabs */
+.rt-tabs{display:flex;gap:0;margin-bottom:16px;border-bottom:1px solid var(--border)}
+.rt-tab{padding:8px 18px;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;transition:.2s;font-size:14px;user-select:none}
+.rt-tab:hover{color:var(--text)}
+.rt-tab.active{color:var(--primary);border-bottom-color:var(--primary)}
+.rt-tab-content{display:none}
+.rt-tab-content.active{display:block}
+/* Header */
+.rt-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px}
+.rt-header h1{font-size:20px;font-weight:700;display:flex;align-items:center;gap:8px}
+/* Cards grid */
+.card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:20px}
+.persona-card{background:var(--panel);border-radius:var(--radius);padding:14px;border:1px solid var(--border);cursor:pointer;transition:.2s}
+.persona-card:hover{border-color:var(--primary);transform:translateY(-1px)}
+.persona-card.selected{border-color:var(--primary);box-shadow:0 0 0 1px var(--primary)}
+.persona-card .p-icon{font-size:24px;margin-bottom:6px}
+.persona-card .p-name{font-size:14px;font-weight:600;margin-bottom:4px}
+.persona-card .p-desc{font-size:12px;color:var(--muted);line-height:1.5}
+/* Form */
+.form-group{margin-bottom:14px}
+.form-group label{display:block;font-size:13px;color:var(--muted);margin-bottom:4px}
+.form-group input,.form-group select{width:100%;padding:8px 10px;background:var(--panel);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:14px}
+.form-group input:focus,.form-group select:focus{outline:none;border-color:var(--primary)}
+.form-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+@media(max-width:768px){.form-row{grid-template-columns:1fr}}
+/* Buttons */
+.btn{padding:7px 16px;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500;transition:.2s;display:inline-flex;align-items:center;gap:5px}
+.btn-primary{background:var(--primary);color:#fff}
+.btn-primary:hover{background:var(--primary-dim)}
+.btn-danger{background:var(--danger);color:#fff}
+.btn-danger:hover{opacity:.85}
+.btn-sm{padding:4px 10px;font-size:12px}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted)}
+.btn-ghost:hover{border-color:var(--primary);color:var(--primary)}
+/* Agent list */
+.agent-list{display:flex;flex-direction:column;gap:8px}
+.agent-row{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.agent-row-info{flex:1;min-width:0}
+.agent-row-name{font-weight:600;font-size:14px}
+.agent-row-meta{font-size:12px;color:var(--muted);margin-top:2px}
+.agent-row-actions{display:flex;gap:6px;flex-shrink:0}
+.agent-row-status{font-size:11px;padding:2px 8px;border-radius:4px;background:var(--success);color:#fff}
+.agent-row-status.inactive{background:var(--warn)}
+/* Modal-like section */
+.section-card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:16px}
+.section-card h3{font-size:15px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+/* Existing discussion styles kept */
+.config-area{margin-bottom:14px}
+.agent-input-row{display:grid;grid-template-columns:1fr 0.8fr 1fr 0.6fr auto;gap:8px;margin-bottom:8px;align-items:end}
+.agent-input-row label{font-size:11px;color:var(--muted);margin-bottom:2px}
+.agent-input-row input,.agent-input-row select{width:100%;padding:6px 8px;background:var(--panel);border:1px solid var(--border);border-radius:5px;color:var(--text);font-size:13px}
+.agent-input-row input:focus,.agent-input-row select:focus{outline:none;border-color:var(--primary)}
+@media(max-width:768px){.agent-input-row{grid-template-columns:1fr 1fr}}
+.rt-stage{background:var(--panel);border-radius:var(--radius);padding:16px;margin:14px 0;min-height:120px;border:1px solid var(--border);font-size:13px}
+.rt-msg{padding:8px 0;border-bottom:1px solid var(--border)}
+.rt-msg:last-child{border-bottom:none}
+.rt-msg .name{font-weight:600;font-size:12px;color:var(--primary)}
+.rt-msg .role{font-size:11px;color:var(--muted);margin-left:6px}
+.rt-msg .text{margin-top:4px;line-height:1.6}
+.rt-msg .text pre{background:#0f172a;padding:8px;border-radius:6px;overflow-x:auto;margin:4px 0;font-size:12px}
+.rt-status{font-size:12px;color:var(--muted);padding:6px 0}
+.rt-report{background:var(--panel);border-radius:var(--radius);padding:18px;margin:14px 0;border:1px solid var(--border)}
+.rt-report h3{font-size:15px;margin-bottom:8px}
+.rt-report .meta{font-size:13px;color:var(--muted);margin-bottom:8px}
+.topic-input{width:100%;padding:10px 12px;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:14px}
+.topic-input:focus{outline:none;border-color:var(--primary)}
+/* Select agent checkbox */
+.agent-select-row{display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--panel);border:1px solid var(--border);border-radius:6px;cursor:pointer;transition:.2s;margin-bottom:6px}
+.agent-select-row:hover{border-color:var(--primary)}
+.agent-select-row input[type="checkbox"]{accent-color:var(--primary);width:16px;height:16px}
+.agent-select-row .a-icon{font-size:18px}
+.agent-select-row .a-info{flex:1}
+.agent-select-row .a-name{font-size:13px;font-weight:500}
+.agent-select-row .a-model{font-size:11px;color:var(--muted)}
+/* Empty state */
+.empty-state{text-align:center;padding:40px 20px;color:var(--muted)}
+.empty-state .e-icon{font-size:40px;margin-bottom:10px}
+.empty-state p{font-size:13px}
+/* Toast */
+.toast{position:fixed;top:20px;right:20px;z-index:9999;padding:12px 18px;border-radius:8px;font-size:13px;max-width:360px;box-shadow:0 4px 12px rgba(0,0,0,.3);animation:fadeIn .3s;display:none}
+.toast.show{display:block}
+.toast.success{background:#065f46;color:#d1fae5;border:1px solid #059669}
+.toast.error{background:#7f1d1d;color:#fee2e2;border:1px solid #dc2626}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+
+<div id="toast" class="toast"></div>
+
+<div class="rt-container">
+  <div class="rt-header">
+    <h1>🗣️ 圆桌 Pro</h1>
+  </div>
+
+  <!-- Tabs -->
+  <div class="rt-tabs">
+    <div class="rt-tab active" data-tab="discuss">💬 讨论</div>
+    <div class="rt-tab" data-tab="agents">🤖 辩手管理</div>
+  </div>
+
+  <!-- Tab: Discuss -->
+  <div class="rt-tab-content active" id="tab-discuss">
+    <div class="section-card">
+      <h3>🎯 讨论话题</h3>
+      <input class="topic-input" id="topic" placeholder="输入讨论话题，例如：Python vs JavaScript 谁更好？">
+    </div>
+
+    <!-- Section: Pick from created agents -->
+    <div class="section-card" id="agent-pick-section">
+      <h3>🤖 选择辩手参与讨论</h3>
+      <div id="agent-pick-list"></div>
+      <div style="margin-top:8px">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px">
+          <input type="checkbox" id="toggle-manual"> 切换为手动配置（Provider/模型）
+        </label>
+      </div>
+    </div>
+
+    <!-- Section: Manual config (hidden by default, shown when toggle or no agents) -->
+    <div class="section-card" id="manual-config-section" style="display:none">
+      <h3>👥 手动配置参与者</h3>
+      <div id="agents-config"></div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="btn btn-ghost btn-sm" onclick="addAgentRow()">＋ 添加参与者</button>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+      <button class="btn btn-primary" onclick="startDiscussion()">🚀 开始讨论</button>
+      <button class="btn btn-ghost btn-sm" onclick="stopDiscussion()" id="stop-btn" style="display:none">⏹ 停止</button>
+    </div>
+
+    <div id="stage" class="rt-stage" style="display:none">
+      <div id="messages"></div>
+      <div id="status" class="rt-status"></div>
+    </div>
+    <div id="report" class="rt-report" style="display:none"></div>
+  </div>
+
+  <!-- Tab: Agent Management -->
+  <div class="rt-tab-content" id="tab-agents">
+    <!-- Step 1: Pick persona -->
+    <div class="section-card">
+      <h3>📋 选择人设</h3>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:10px">选择一个角色模板，创建真实 QwenPaw 智能体</p>
+      <div id="persona-grid" class="card-grid"></div>
+    </div>
+
+    <!-- Step 2: Configure -->
+    <div class="section-card" id="create-form" style="display:none">
+      <h3>⚙️ 配置辩手</h3>
+      <div id="selected-persona-info" style="font-size:13px;color:var(--muted);margin-bottom:10px"></div>
+      <div class="form-group">
+        <label>辩手名称</label>
+        <input id="agent-name" placeholder="输入自定义名称，如 Python极客小张" value="">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Provider</label>
+          <select id="agent-provider"></select>
+        </div>
+        <div class="form-group">
+          <label>模型</label>
+          <select id="agent-model"></select>
+        </div>
+        <div class="form-group">
+          <label>立场（可自定义）</label>
+          <input id="agent-stance" placeholder="例如：支持Python生态">
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:4px">
+        <button class="btn btn-primary" onclick="createAgent()">🤖 创建辩手</button>
+        <button class="btn btn-ghost btn-sm" onclick="cancelCreateAgent()">取消</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Created agents list -->
+    <div class="section-card">
+      <h3>📋 已创建的辩手</h3>
+      <div id="created-agents">
+        <div class="empty-state">
+          <div class="e-icon">🤖</div>
+          <p>还没有辩手。选个人设创建吧！</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = window.location.pathname.includes('/frontend_plugin/')
+  ? '/api/frontend_plugin/roundtable-pro'
+  : '/api/roundtable-pro';
+
+let providers = [];
+let allPersonas = [];
+let selectedPersona = null;
+let debaters = [];
+let discussionActive = false;
+let eventSource = null;
+
+// ── Utilities ──
+function toast(msg, type='success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast show ' + type;
+  clearTimeout(t._hide); t._hide = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+async function api(path, opts={}) {
+  const r = await fetch(API + path, { headers:{'Content-Type':'application/json'}, ...opts });
+  if (!r.ok) { const txt = await r.text().catch(()=>''); throw new Error(r.status + ' ' + txt.slice(0,100)); }
+  if (opts.raw) return r;
+  if (opts.blob) return r.blob();
+  const ct = r.headers.get('content-type')||'';
+  if (ct.includes('application/json')) return r.json();
+  const txt = await r.text();
+  try { return JSON.parse(txt); } catch(e) { return txt; }
+}
+
+function $(id) { return document.getElementById(id); }
+
+// ── Tabs ──
+document.querySelectorAll('.rt-tab').forEach(el => {
+  el.addEventListener('click', () => {
+    document.querySelectorAll('.rt-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.rt-tab-content').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    $(`tab-${el.dataset.tab}`).classList.add('active');
+    if (el.dataset.tab === 'agents') { loadPersonas(); loadDebaters(); }
+  if (el.dataset.tab === 'discuss') {
+    loadDebatersForPick();
+    // Sync manual toggle UI
+    const manual = $('toggle-manual');
+    const manualSection = $('manual-config-section');
+    const pickSection = $('agent-pick-section');
+    if (manual && manual.checked) {
+      manualSection.style.display = 'block';
+      pickSection.style.display = 'none';
+    } else {
+      pickSection.style.display = 'block';
+      // auto-show if no agents
+      if (debaters.filter(a => a.enabled !== false).length === 0) {
+        manualSection.style.display = 'block';
+      } else {
+        manualSection.style.display = 'none';
+      }
+    }
+  }
+  });
+});
+
+// ── Providers (from existing models endpoint) ──
+async function loadProviders() {
+  try {
+    const data = await api('/models');
+    providers = (data || []).filter(p => p.provider_id && p.models && p.models.length > 0);
+  } catch(e) { providers = []; }
+  populateProviderSelects();
+}
+
+function populateProviderSelects() {
+  const s = $('agent-provider');
+  if (!s) return;
+  s.innerHTML = '<option value="">选择 Provider</option>' +
+    providers.map(p => `<option value="${p.provider_id}">${p.provider||p.provider_id}</option>`).join('');
+  // Bind change event to update model dropdown
+  s.onchange = function() { onProviderChange('agent-provider', 'agent-model'); };
+}
+
+function onProviderChange(selectId, modelSelectId) {
+  const sel = $(selectId); const msel = $(modelSelectId);
+  if (!sel || !msel) return;
+  const pid = sel.value;
+  const prov = providers.find(p => p.provider_id === pid);
+  msel.innerHTML = '<option value="">选择模型</option>';
+  if (prov && prov.models) {
+    for (const m of prov.models) {
+      // models can be strings or objects {id, name, category}
+      const mid = typeof m === 'string' ? m : (m.id || m);
+      const mname = typeof m === 'string' ? m : (m.name || m.id || m);
+      msel.innerHTML += `<option value="${mid}">${mname}</option>`;
+    }
+  }
+}
+
+// ── Persona Templates (Subtask 0) ──
+async function loadPersonas() {
+  try {
+    allPersonas = await api('/personas');
+  } catch(e) { allPersonas = []; }
+  renderPersonaGrid();
+}
+
+let personaIcons = {'python_expert':'🐍','js_fullstack':'🎨','data_scientist':'🧪','product_manager':'👤','ops_engineer':'🔧','skeptic':'🤔','optimist':'🎯','risk_officer':'⚠️'};
+
+function renderPersonaGrid() {
+  const grid = $('persona-grid');
+  if (!grid) return;
+  if (!allPersonas.length) {
+    grid.innerHTML = '<div class="empty-state"><p>暂无可用人设</p></div>';
+    return;
+  }
+  grid.innerHTML = allPersonas.map(p => `
+    <div class="persona-card ${selectedPersona && selectedPersona.id === p.id ? 'selected' : ''}"
+         onclick="selectPersona('${p.id}')">
+      <div class="p-icon">${personaIcons[p.id]||'🤖'}</div>
+      <div class="p-name">${p.name}</div>
+      <div class="p-desc">${p.description||''}</div>
+    </div>
+  `).join('');
+}
+
+function selectPersona(id) {
+  selectedPersona = allPersonas.find(p => p.id === id);
+  renderPersonaGrid();
+  if (selectedPersona) {
+    $('create-form').style.display = 'block';
+    $('selected-persona-info').textContent = `已选: ${selectedPersona.name} — ${selectedPersona.description||''}`;
+    $('agent-name').value = selectedPersona.name.replace(/[^\w\u4e00-\u9fff]/g,'').slice(0,10) || '辩手';
+    $('agent-stance').value = selectedPersona.suggested_stance || '';
+    // Set default provider/model
+    const provSelect = $('agent-provider');
+    const modelSelect = $('agent-model');
+    if (selectedPersona.suggested_provider) {
+      provSelect.value = selectedPersona.suggested_provider;
+      onProviderChange('agent-provider', 'agent-model');
+      if (selectedPersona.suggested_model) {
+        setTimeout(() => { modelSelect.value = selectedPersona.suggested_model; }, 100);
+      }
+    }
+  }
+}
+
+function cancelCreateAgent() {
+  selectedPersona = null;
+  $('create-form').style.display = 'none';
+  renderPersonaGrid();
+}
+
+// ── Create Agent (Subtask 2/3) ──
+async function createAgent() {
+  if (!selectedPersona) { toast('请先选择一个人设', 'error'); return; }
+  const name = $('agent-name').value.trim();
+  if (!name) { toast('请输入辩手名称', 'error'); return; }
+  const provider = $('agent-provider').value;
+  const model = $('agent-model').value;
+  if (!provider || !model) { toast('请选择 Provider 和模型', 'error'); return; }
+  const stance = $('agent-stance').value.trim() || selectedPersona.suggested_stance || '';
+
+  try {
+    const result = await api('/debaters', {
+      method: 'POST',
+      body: JSON.stringify({
+        template_id: selectedPersona.id,
+        name: name,
+        provider: provider,
+        model: model,
+        stance: stance,
+      }),
+    });
+    toast(`✅ 辩手「${name}」创建成功！`);
+    selectedPersona = null;
+    $('create-form').style.display = 'none';
+    renderPersonaGrid();
+    loadDebaters();
+    $('agent-name').value = '';
+  } catch(e) {
+    toast('创建失败: ' + e.message, 'error');
+  }
+}
+
+// ── List Debaters (Subtask 3) ──
+async function loadDebaters() {
+  try {
+    debaters = await api('/debaters');
+  } catch(e) { debaters = []; }
+  renderDebaterList();
+  return debaters;
+}
+
+function renderDebaterList() {
+  const container = $('created-agents');
+  if (!container) return;
+  if (!debaters.length) {
+    container.innerHTML = '<div class="empty-state"><div class="e-icon">🤖</div><p>还没有辩手。选个人设创建吧！</p></div>';
+    return;
+  }
+  container.innerHTML = '<div class="agent-list">' + debaters.map(a => `
+    <div class="agent-row">
+      <div class="agent-row-info">
+        <div class="agent-row-name">${personaIcons[a.persona_id]||'🤖'} ${a.name}</div>
+        <div class="agent-row-meta">${a.model} · ${a.stance||'无立场'} · ${a.agent_id}</div>
+      </div>
+      <span class="agent-row-status ${a.enabled !== false ? '' : 'inactive'}">${a.enabled !== false ? '✅ 就绪' : '⛔ 停用'}</span>
+      <div class="agent-row-actions">
+        <button class="btn btn-danger btn-sm" onclick="deleteAgent('${a.agent_id}')">🗑 删除</button>
+      </div>
+    </div>
+  `).join('') + '</div>';
+}
+
+async function deleteAgent(agentId) {
+  if (!confirm('确定删除此辩手？')) return;
+  try {
+    await api('/debaters/' + agentId, { method: 'DELETE' });
+    toast('已删除');
+    loadDebaters();
+  } catch(e) {
+    toast('删除失败: ' + e.message, 'error');
+  }
+}
+
+// ── Pick agents for discussion ──
+async function loadDebatersForPick() {
+  await loadDebaters();
+  const container = $('agent-pick-list');
+  if (!container) return;
+  const enabled = debaters.filter(a => a.enabled !== false);
+  const section = $('agent-pick-section');
+  const manualSection = $('manual-config-section');
+  const manualCheckbox = $('toggle-manual');
+
+  // Remove old listener to avoid duplicates
+  const newCheckbox = manualCheckbox.cloneNode(true);
+  manualCheckbox.parentNode.replaceChild(newCheckbox, manualCheckbox);
+
+  if (!enabled.length) {
+    // No agents → show manual config
+    section.style.display = 'none';
+    manualSection.style.display = 'block';
+    return;
+  }
+
+  section.style.display = 'block';
+  container.innerHTML = enabled.map(a => `
+    <label class="agent-select-row">
+      <input type="checkbox" class="pick-agent-cb" value="${a.agent_id}" data-name="${a.name}" data-stance="${a.stance||''}">
+      <span class="a-icon">${personaIcons[a.persona_id]||'🤖'}</span>
+      <span class="a-info">
+        <span class="a-name">${a.name}</span>
+        <span class="a-model">${a.model} · ${a.stance||'无立场'}</span>
+      </span>
+    </label>
+  `).join('');
+
+  const newManual = $('toggle-manual');
+  if (newManual && !newManual.checked) {
+    manualSection.style.display = 'none';
+  }
+
+  newManual.addEventListener('change', (e) => {
+    if (e.target.checked) {
+      manualSection.style.display = 'block';
+      section.style.display = 'none';
+    } else {
+      manualSection.style.display = 'none';
+      section.style.display = 'block';
+    }
+  });
+}
+
+// ── Manual agent config (existing logic) ──
+function addAgentRow(provider, model, name, role, stance) {
+  const container = $('agents-config');
+  const roles = ['host','debater','debater','judge'];
+  const roleNames = { host:'主持人', debater:'辩手', judge:'裁判' };
+  const i = container.children.length;
+  const roleVal = role || roles[Math.min(i, roles.length-1)];
+  const div = document.createElement('div');
+  div.className = 'agent-input-row';
+  div.innerHTML = `
+    <div><label>角色</label>
+      <select onchange="updateRoleName(this)"><option value="host" ${roleVal==='host'?'selected':''}>主持人</option>
+      <option value="debater" ${roleVal==='debater'?'selected':''}>辩手</option>
+      <option value="judge" ${roleVal==='judge'?'selected':''}>裁判</option></select></div>
+    <div><label>Provider</label><select class="a-provider" onchange="updateModels(this)"><option value="">选择</option>
+      ${providers.map(p => `<option value="${p.provider_id}" ${p.provider_id===provider?'selected':''}>${p.provider||p.provider_id}</option>`).join('')}</select></div>
+    <div><label>模型</label><select class="a-model"><option value="">选择</option></select></div>
+    <div><label>名称</label><input class="a-name" value="${name||roleNames[roleVal]||'参与者'+(i+1)}"></div>
+    <div><label>立场</label><input class="a-stance" value="${stance||''}" placeholder="可选"></div>
+    <button class="btn btn-danger btn-sm" onclick="this.parentElement.remove()" style="margin-bottom:0">✕</button>
+  `;
+  container.appendChild(div);
+  if (provider) setTimeout(() => { updateModels(div.querySelector('.a-provider')); }, 50);
+}
+
+function updateRoleName(sel) {
+  const names = { host:'主持人', debater:'辩手', judge:'裁判' };
+  const row = sel.closest('.agent-input-row');
+  const nameInput = row.querySelector('.a-name');
+  if (nameInput && !nameInput.dataset.custom) nameInput.value = names[sel.value] || '参与者';
+}
+
+function updateModels(sel) {
+  const row = sel.closest('.agent-input-row');
+  const msel = row.querySelector('.a-model');
+  const pid = sel.value;
+  const prov = providers.find(p => p.provider_id === pid);
+  msel.innerHTML = '<option value="">选择模型</option>';
+  if (prov && prov.models) {
+    for (const m of prov.models) {
+      const mid = typeof m === 'string' ? m : (m.id || m);
+      const mname = typeof m === 'string' ? m : (m.name || m.id || m);
+      msel.innerHTML += `<option value="${mid}">${mname}</option>`;
+    }
+  }
+}
+
+// ── Start Discussion ──
+async function startDiscussion() {
+  const topic = $('topic').value.trim();
+  if (!topic) { toast('请输入讨论话题', 'error'); return; }
+
+  const pickedCbs = document.querySelectorAll('.pick-agent-cb:checked:not(:disabled)');
+  const useManual = $('toggle-manual') && $('toggle-manual').checked;
+  let agents = [];
+
+  if (pickedCbs.length > 0 && !useManual) {
+    // Use created agents
+    agents = Array.from(pickedCbs).map(cb => {
+      const a = debaters.find(d => d.agent_id === cb.value);
+      return a ? { agent_id: a.agent_id, name: a.name, role: 'debater', stance: a.stance || '' } : null;
+    }).filter(Boolean);
+    // Auto-add host and judge if needed
+    const hasHost = agents.some(a => a.role === 'host');
+    const hasJudge = agents.some(a => a.role === 'judge');
+    if (!hasHost) agents.unshift({ agent_id: agents[0]?.agent_id || '', name: '主持人', role: 'host', stance: '中立主持' });
+    if (!hasJudge) agents.push({ agent_id: agents[agents.length-1]?.agent_id || '', name: '裁判', role: 'judge', stance: '中立裁判' });
+  } else {
+    // Manual config
+    const rows = document.querySelectorAll('#agents-config .agent-input-row');
+    if (rows.length < 2) { toast('至少配置 2 位参与者', 'error'); return; }
+    agents = Array.from(rows).map(row => ({
+      provider: row.querySelector('.a-provider').value,
+      model: row.querySelector('.a-model').value,
+      name: row.querySelector('.a-name').value || '参与者',
+      role: row.querySelector('select:first-child').value,
+      stance: row.querySelector('.a-stance').value || '',
+    }));
+    if (agents.some(a => !a.provider || !a.model)) { toast('请为所有参与者选择 Provider 和模型', 'error'); return; }
+  }
+
+  // Show stage
+  $('stage').style.display = 'block';
+  $('messages').innerHTML = '';
+  $('report').style.display = 'none';
+  $('status').textContent = '🔄 正在发起讨论...';
+  $('stop-btn').style.display = 'inline-flex';
+  discussionActive = true;
+
+  const body = { topic, mode: 'discuss', agents };
+  if (pickedCbs.length > 0 && !useManual) body.judge = agents.find(a => a.role === 'judge') || agents[agents.length-1];
+
+  try {
+    const resp = await api('/discuss', { method:'POST', body:JSON.stringify(body), raw:true });
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+      for (const line of lines) {
+        if (line.startsWith('event: ')) {
+          const evt = line.slice(7).trim();
+          // Next line is data
+          continue;
+        }
+        if (line.startsWith('data: ')) {
+          try {
+            const data = JSON.parse(line.slice(6));
+            handleSSEEvent(data);
+          } catch(e) {}
+        }
+      }
+    }
+  } catch(e) {
+    $('status').textContent = '❌ 请求失败: ' + e.message;
+  } finally {
+    discussionActive = false;
+    $('stop-btn').style.display = 'none';
+  }
+}
+
+function handleSSEEvent(data) {
+  if (data.type === 'config' || data.hid) {
+    $('status').textContent = `🔄 讨论已启动 (ID: ${data.hid || data.config?.hid || ''})`;
+  }
+  if (data.round && data.name && data.content) {
+    const msgDiv = document.createElement('div');
+    msgDiv.className = 'rt-msg';
+    const roleLabel = { host:'🎙️ 主持', debater:'💬 辩手', judge:'⚖️ 裁判' };
+    msgDiv.innerHTML = `<div class="name">${roleLabel[data.role]||'👤'} ${data.name}</div>
+      <div class="text">${formatContent(data.content)}</div>`;
+    $('messages').appendChild(msgDiv);
+    $('status').textContent = `🔄 第 ${data.round} 轮 · ${data.name} 发言中...`;
+  }
+  if (data.summary) {
+    $('report').style.display = 'block';
+    $('report').innerHTML = `<h3>📊 讨论总结</h3>
+      <div class="meta">${data.summary}</div>
+      ${data.consensus ? `<h4>✅ 共识</h4><ul>${data.consensus.map(c => '<li>'+c+'</li>').join('')}</ul>` : ''}
+      ${data.recommendations ? `<h4>💡 建议</h4><ul>${data.recommendations.map(r => '<li>'+r+'</li>').join('')}</ul>` : ''}`;
+    $('status').textContent = '✅ 讨论完成';
+  }
+  if (data.done) {
+    $('status').textContent = '✅ 讨论完成 (ID: ' + data.hid + ')';
+  }
+}
+
+function formatContent(text) {
+  if (!text) return '';
+  return text.replace(/```(\w*)\n?([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
+             .replace(/\n/g, '<br>');
+}
+
+function stopDiscussion() {
+  if (eventSource) { eventSource.close(); eventSource = null; }
+  discussionActive = false;
+  $('status').textContent = '⏹ 已停止';
+  $('stop-btn').style.display = 'none';
+}
+
+// ── Init ──
+function getModelId(prov) {
+  if (!prov || !prov.models || !prov.models.length) return '';
+  const m = prov.models[0];
+  return typeof m === 'string' ? m : (m.id || m);
+}
+
+async function init() {
+  // Must await providers first — all downstream code depends on it
+  await loadProviders();
+  loadPersonas();
+  await loadDebaters();
+  // If there are already created agents, don't add manual rows.
+  if (debaters.length > 0) return; // user has agents, no need for manual defaults
+  if (providers.length === 0) { addAgentRow('','','主持人','host','中立客观'); addAgentRow('','','嘉宾A','debater','支持方'); addAgentRow('','','嘉宾B','debater','反对方'); return; }
+  const p0 = providers[0], p1 = providers.length > 1 ? providers[1] : p0;
+  addAgentRow(p0?.provider_id, getModelId(p0), '主持人', 'host', '中立客观');
+  addAgentRow(p1?.provider_id, getModelId(p1), '嘉宾A', 'debater', '支持方');
+  addAgentRow(providers.length > 2 ? providers[2]?.provider_id : p1?.provider_id, '', '嘉宾B', 'debater', '反对方');
+  // show manual config since no agents exist
+  $('manual-config-section').style.display = 'block';
+}
+
+init();</script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+{
+  "id": "roundtable-pro",
+  "name": "圆桌 Pro",
+  "version": "1.0.0",
+  "description": "多模型并发讨论与头脑风暴",
+  "author": "Cat🐱",
+  "entry": {
+    "backend": "main.py",
+    "frontend": "frontend/entry.js"
+  },
+  "menu": []
+}
