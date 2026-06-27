@@ -5,7 +5,7 @@ import asyncio
 from typing import AsyncGenerator, Optional
 
 from .models import DiscussRequest, RoundConfig, AgentConfig, Message, ReportData, Discussion
-from .config import DEFAULT_HOST, DEFAULT_JUDGE, HOST_PROMPT, JUDGE_PROMPT, DEBATER_PROMPT_TEMPLATE
+from .config import DEFAULT_HOST, DEFAULT_JUDGE, HOST_PROMPT, JUDGE_PROMPT, DEBATER_PROMPT_TEMPLATE, HOST_QUESTION_PROMPT
 from .storage import Storage
 from .sse import EventStream
 
@@ -277,7 +277,7 @@ async def run_roundtable(provider_manager, req: DiscussRequest, stream: EventStr
         question = ""
         if round_idx > 1:
             q_messages = [
-                {"role": "system", "content": "你是主持人。基于历史发言，生成 1 个追问问题，要求下一轮的辩手必须回应。只输出问题。"},
+                {"role": "system", "content": HOST_QUESTION_PROMPT},
                 {"role": "user", "content": f"本轮讨论的历史发言：\n{history_text}\n\n请生成一个追问问题。"}
             ]
             try:

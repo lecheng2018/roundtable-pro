@@ -1,0 +1,23 @@
+{
+  "id": "roundtable-pro",
+  "name": "圆桌 Pro",
+  "version": "1.0.0",
+  "type": "general",
+  "description": "Multi-agent roundtable discussion plugin for QwenPaw. Supports multi-round debate, brainstorming, and judge summary.",
+  "description_i18n": {
+    "zh-CN": "QwenPaw 多智能体圆桌讨论插件。支持多轮辩论、头脑风暴、裁判总结。",
+    "en-US": "QwenPaw multi-agent roundtable discussion plugin. Supports multi-round debate, brainstorming, and judge summary."
+  },
+  "author": "lecheng2018",
+  "entry": {
+    "backend": "main.py",
+    "frontend": "frontend/entry.js"
+  },
+  "dependencies": [],
+  "min_version": "1.0.0",
+  "meta": {
+    "category": "collaboration",
+    "homepage": "https://github.com/lecheng2018/roundtable-pro",
+    "license": "MIT"
+  }
+}
