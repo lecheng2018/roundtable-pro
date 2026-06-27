@@ -5,96 +5,242 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>圆桌 Pro</title>
 <style>
-:root{--bg:#0f172a;--panel:#1e293b;--text:#e2e8f0;--muted:#94a3b8;--primary:#3b82f6;--primary-dim:#1d4ed8;--danger:#ef4444;--success:#22c55e;--warn:#f59e0b;--border:#334155;--radius:10px}
+/* ─── QwenPaw Console Design Tokens — Light (default) ──────────────────── */
+:root{
+  --bg:#f9f8f4;
+  --panel:#ffffff;
+  --surface:#f5f5f5;
+  --text:rgba(0,0,0,.88);
+  --text-sec:rgba(0,0,0,.65);
+  --text-ter:rgba(0,0,0,.45);
+  --muted:rgba(0,0,0,.25);
+  --primary:#ff7f16;
+  --primary-hover:#ff9438;
+  --primary-tint:rgba(255,127,22,.06);
+  --danger:#ff4d4f;
+  --success:#52c41a;
+  --warn:#faad14;
+  --border:rgba(0,0,0,.06);
+  --border-strong:rgba(0,0,0,.15);
+  --radius-card:8px;
+  --radius-sm:6px;
+  --shadow:0 1px 2px 0 rgba(0,0,0,.03);
+  --font:system-ui,-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;
+  --hover-bg:rgba(0,0,0,.04);
+  --code-bg:rgba(0,0,0,.06);
+}
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;font-size:14px;line-height:1.6;overflow-x:hidden}
-.rt-container{max-width:1200px;margin:0 auto;padding:16px}
-/* Tabs */
-.rt-tabs{display:flex;gap:0;margin-bottom:16px;border-bottom:1px solid var(--border)}
-.rt-tab{padding:8px 18px;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;transition:.2s;font-size:14px;user-select:none}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;line-height:1.6;overflow-x:hidden;color-scheme:light dark}
+.rt-container{max-width:1200px;margin:0 auto;padding:20px 24px}
+
+/* ─── Dark mode overrides ─────────────────────────────────────────────────── */
+html.dark-mode{
+  --bg:#141414;
+  --panel:#1f1f1f;
+  --surface:#2a2a2a;
+  --text:rgba(255,255,255,.85);
+  --text-sec:rgba(255,255,255,.65);
+  --text-ter:rgba(255,255,255,.45);
+  --muted:rgba(255,255,255,.35);
+  --primary:#ff7f16;
+  --primary-hover:#ff9438;
+  --primary-tint:rgba(255,127,22,.08);
+  --danger:#ff4d4f;
+  --success:#52c41a;
+  --warn:#faad14;
+  --border:rgba(255,255,255,.1);
+  --border-strong:rgba(255,255,255,.15);
+  --hover-bg:#313131;
+  --code-bg:rgba(0,0,0,.35);
+}
+html.dark-mode body{color-scheme:dark}
+
+/* ─── Common ──────────────────────────────────────────────────────────────── */
+.rt-container{max-width:1200px;margin:0 auto;padding:20px 24px}
+
+/* ─── Tabs ───────────────────────────────────────────────────────────────── */
+.rt-tabs{display:flex;gap:0;margin-bottom:20px;border-bottom:1px solid var(--border)}
+.rt-tab{padding:10px 20px;cursor:pointer;color:var(--text-sec);border-bottom:2px solid transparent;transition:all .2s;font-size:14px;user-select:none}
 .rt-tab:hover{color:var(--text)}
 .rt-tab.active{color:var(--primary);border-bottom-color:var(--primary)}
 .rt-tab-content{display:none}
 .rt-tab-content.active{display:block}
-/* Header */
-.rt-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px}
-.rt-header h1{font-size:20px;font-weight:700;display:flex;align-items:center;gap:8px}
-/* Cards grid */
+
+/* ─── Cards ──────────────────────────────────────────────────────────────── */
+.section-card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-card);padding:20px;margin-bottom:16px}
+.section-card h3{font-size:14px;font-weight:600;margin-bottom:14px;color:var(--text);display:flex;align-items:center;gap:6px}
 .card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:20px}
-.persona-card{background:var(--panel);border-radius:var(--radius);padding:14px;border:1px solid var(--border);cursor:pointer;transition:.2s}
-.persona-card:hover{border-color:var(--primary);transform:translateY(-1px)}
-.persona-card.selected{border-color:var(--primary);box-shadow:0 0 0 1px var(--primary)}
+.persona-card{background:var(--surface);border-radius:var(--radius-sm);padding:14px;border:1px solid var(--border);cursor:pointer;transition:all .2s}
+.persona-card:hover{border-color:var(--primary);background:var(--primary-tint)}
+.persona-card.selected{border-color:var(--primary);background:var(--primary-tint);box-shadow:0 0 0 1px var(--primary)}
 .persona-card .p-icon{font-size:24px;margin-bottom:6px}
-.persona-card .p-name{font-size:14px;font-weight:600;margin-bottom:4px}
-.persona-card .p-desc{font-size:12px;color:var(--muted);line-height:1.5}
-/* Form */
+.persona-card .p-name{font-size:14px;font-weight:600;margin-bottom:4px;color:var(--text)}
+.persona-card .p-desc{font-size:12px;color:var(--text-ter);line-height:1.5}
+
+/* ─── Header ─────────────────────────────────────────────────────────────── */
+.rt-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px}
+.rt-header h1{font-size:20px;font-weight:700;display:flex;align-items:center;gap:8px;color:var(--text)}
+
+/* ─── Forms ──────────────────────────────────────────────────────────────── */
 .form-group{margin-bottom:14px}
-.form-group label{display:block;font-size:13px;color:var(--muted);margin-bottom:4px}
-.form-group input,.form-group select{width:100%;padding:8px 10px;background:var(--panel);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:14px}
-.form-group input:focus,.form-group select:focus{outline:none;border-color:var(--primary)}
+.form-group label{display:block;font-size:13px;color:var(--text-sec);margin-bottom:4px;font-weight:500}
+.form-group input,.form-group select{width:100%;padding:7px 11px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:14px;transition:all .2s;outline:none}
+.form-group input:focus,.form-group select:focus{border-color:var(--primary);box-shadow:0 0 0 2px var(--primary-tint)}
 .form-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
 @media(max-width:768px){.form-row{grid-template-columns:1fr}}
-/* Buttons */
-.btn{padding:7px 16px;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500;transition:.2s;display:inline-flex;align-items:center;gap:5px}
+
+/* ─── Buttons ────────────────────────────────────────────────────────────── */
+.btn{padding:5px 12px;border:none;border-radius:var(--radius-sm);cursor:pointer;font-size:13px;font-weight:500;transition:all .2s;display:inline-flex;align-items:center;gap:5px;font-family:var(--font);line-height:1.6}
 .btn-primary{background:var(--primary);color:#fff}
-.btn-primary:hover{background:var(--primary-dim)}
+.btn-primary:hover{background:var(--primary-hover)}
 .btn-danger{background:var(--danger);color:#fff}
 .btn-danger:hover{opacity:.85}
-.btn-sm{padding:4px 10px;font-size:12px}
-.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted)}
-.btn-ghost:hover{border-color:var(--primary);color:var(--primary)}
-/* Agent list */
+.btn-sm{padding:3px 8px;font-size:12px}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text-sec)}
+.btn-ghost:hover{border-color:var(--text-sec);color:var(--text)}
+
+/* ─── Agent list ─────────────────────────────────────────────────────────── */
 .agent-list{display:flex;flex-direction:column;gap:8px}
-.agent-row{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.agent-row{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;display:flex;align-items:center;gap:12px;transition:background .2s}
+.agent-row:hover{background:var(--hover-bg)}
 .agent-row-info{flex:1;min-width:0}
-.agent-row-name{font-weight:600;font-size:14px}
-.agent-row-meta{font-size:12px;color:var(--muted);margin-top:2px}
+.agent-row-name{font-size:14px;font-weight:600;color:var(--text)}
+.agent-row-meta{font-size:12px;color:var(--text-ter);margin-top:1px}
+.agent-row-status{font-size:12px;font-weight:500;white-space:nowrap;color:var(--success)}
+.agent-row-status.inactive{color:var(--muted)}
 .agent-row-actions{display:flex;gap:6px;flex-shrink:0}
-.agent-row-status{font-size:11px;padding:2px 8px;border-radius:4px;background:var(--success);color:#fff}
-.agent-row-status.inactive{background:var(--warn)}
-/* Modal-like section */
-.section-card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:16px}
-.section-card h3{font-size:15px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:6px}
-/* Existing discussion styles kept */
-.config-area{margin-bottom:14px}
-.agent-input-row{display:grid;grid-template-columns:1fr 0.8fr 1fr 0.6fr auto;gap:8px;margin-bottom:8px;align-items:end}
-.agent-input-row label{font-size:11px;color:var(--muted);margin-bottom:2px}
-.agent-input-row input,.agent-input-row select{width:100%;padding:6px 8px;background:var(--panel);border:1px solid var(--border);border-radius:5px;color:var(--text);font-size:13px}
-.agent-input-row input:focus,.agent-input-row select:focus{outline:none;border-color:var(--primary)}
-@media(max-width:768px){.agent-input-row{grid-template-columns:1fr 1fr}}
-.rt-stage{background:var(--panel);border-radius:var(--radius);padding:16px;margin:14px 0;min-height:120px;border:1px solid var(--border);font-size:13px}
+
+/* ─── Stage / Discussion area ────────────────────────────────────────────── */
+.rt-stage{border:1px solid var(--border);border-radius:var(--radius-card);background:var(--panel);padding:16px;max-height:600px;overflow-y:auto;margin-bottom:12px;min-height:120px;font-size:13px}
+.rt-stage::-webkit-scrollbar{width:6px}
+.rt-stage::-webkit-scrollbar-track{background:transparent}
+.rt-stage::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+.rt-status{color:var(--primary);font-size:13px;padding:12px 0;display:flex;align-items:center;gap:8px}
+.rt-report{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-card);padding:20px;line-height:1.8;margin:14px 0}
 .rt-msg{padding:8px 0;border-bottom:1px solid var(--border)}
 .rt-msg:last-child{border-bottom:none}
 .rt-msg .name{font-weight:600;font-size:12px;color:var(--primary)}
-.rt-msg .role{font-size:11px;color:var(--muted);margin-left:6px}
+.rt-msg .role{font-size:11px;color:var(--text-ter);margin-left:6px}
 .rt-msg .text{margin-top:4px;line-height:1.6}
-.rt-msg .text pre{background:#0f172a;padding:8px;border-radius:6px;overflow-x:auto;margin:4px 0;font-size:12px}
-.rt-status{font-size:12px;color:var(--muted);padding:6px 0}
-.rt-report{background:var(--panel);border-radius:var(--radius);padding:18px;margin:14px 0;border:1px solid var(--border)}
-.rt-report h3{font-size:15px;margin-bottom:8px}
-.rt-report .meta{font-size:13px;color:var(--muted);margin-bottom:8px}
-.topic-input{width:100%;padding:10px 12px;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:14px}
-.topic-input:focus{outline:none;border-color:var(--primary)}
-/* Select agent checkbox */
-.agent-select-row{display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--panel);border:1px solid var(--border);border-radius:6px;cursor:pointer;transition:.2s;margin-bottom:6px}
-.agent-select-row:hover{border-color:var(--primary)}
+.rt-msg .text pre{background:var(--bg);padding:8px;border-radius:6px;overflow-x:auto;margin:4px 0;font-size:12px;border:1px solid var(--border)}
+
+/* ─── Messages ───────────────────────────────────────────────────────────── */
+.msg{margin-bottom:12px;padding:10px 14px;border-radius:var(--radius-sm);background:var(--surface);border-left:3px solid var(--border)}
+.msg.host{border-left-color:var(--primary)}
+.msg.debate{border-left-color:var(--text-ter)}
+.msg.judge{border-left-color:var(--success)}
+.msg .msg-hdr{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.msg .msg-hdr .role{font-size:12px;font-weight:600;color:var(--primary)}
+.msg .msg-hdr .name{font-size:12px;color:var(--text-sec)}
+.msg .msg-hdr .time{font-size:11px;color:var(--muted);margin-left:auto}
+.msg .msg-body{font-size:13px;line-height:1.7;color:var(--text);word-break:break-word}
+.msg .msg-body p{margin-bottom:6px}
+.msg .msg-body ul,.msg .msg-body ol{padding-left:18px;margin-bottom:6px}
+.msg .msg-body code{background:var(--code-bg);padding:1px 5px;border-radius:3px;font-size:12px}
+
+/* ─── Config area ────────────────────────────────────────────────────────── */
+.config-area{margin-bottom:14px}
+.agent-input-row{display:grid;grid-template-columns:1fr 0.8fr 1fr 0.6fr auto;gap:8px;margin-bottom:8px;align-items:end}
+.agent-input-row label{font-size:11px;color:var(--text-ter);margin-bottom:2px}
+.agent-input-row input,.agent-input-row select{width:100%;padding:6px 8px;background:var(--surface);border:1px solid var(--border);border-radius:5px;color:var(--text);font-size:13px;outline:none}
+.agent-input-row input:focus,.agent-input-row select:focus{border-color:var(--primary)}
+@media(max-width:768px){.agent-input-row{grid-template-columns:1fr 1fr}}
+
+/* ─── Topic input ────────────────────────────────────────────────────────── */
+.topic-input{width:100%;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:14px;outline:none;transition:all .2s}
+.topic-input:focus{border-color:var(--primary);box-shadow:0 0 0 2px var(--primary-tint)}
+
+/* ─── Select agent checkbox ──────────────────────────────────────────────── */
+.agent-select-row{display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;transition:all .2s;margin-bottom:6px}
+.agent-select-row:hover{border-color:var(--primary);background:var(--primary-tint)}
 .agent-select-row input[type="checkbox"]{accent-color:var(--primary);width:16px;height:16px}
 .agent-select-row .a-icon{font-size:18px}
 .agent-select-row .a-info{flex:1}
 .agent-select-row .a-name{font-size:13px;font-weight:500}
-.agent-select-row .a-model{font-size:11px;color:var(--muted)}
-/* Empty state */
+.agent-select-row .a-model{font-size:11px;color:var(--text-ter)}
+
+/* ─── Toggle switch ──────────────────────────────────────────────────────── */
+.toggle-wrap{display:flex;align-items:center;gap:8px;margin-bottom:14px;cursor:pointer;user-select:none}
+.toggle-track{width:36px;height:20px;background:var(--border-strong);border-radius:10px;position:relative;transition:all .2s;flex-shrink:0}
+.toggle-track.on{background:var(--primary)}
+.toggle-thumb{width:16px;height:16px;background:#fff;border-radius:50%;position:absolute;top:2px;left:2px;transition:all .2s}
+.toggle-track.on .toggle-thumb{left:18px}
+.toggle-label{font-size:13px;color:var(--text-sec)}
+
+/* ─── Empty state ────────────────────────────────────────────────────────── */
 .empty-state{text-align:center;padding:40px 20px;color:var(--muted)}
 .empty-state .e-icon{font-size:40px;margin-bottom:10px}
-.empty-state p{font-size:13px}
-/* Toast */
-.toast{position:fixed;top:20px;right:20px;z-index:9999;padding:12px 18px;border-radius:8px;font-size:13px;max-width:360px;box-shadow:0 4px 12px rgba(0,0,0,.3);animation:fadeIn .3s;display:none}
+.empty-state p{font-size:13px;color:var(--text-ter)}
+
+/* ─── Toast ──────────────────────────────────────────────────────────────── */
 .toast.show{display:block}
-.toast.success{background:#065f46;color:#d1fae5;border:1px solid #059669}
-.toast.error{background:#7f1d1d;color:#fee2e2;border:1px solid #dc2626}
+.toast.success{background:#d4edd7;color:#1f7042;border:1px solid var(--success)}
+.toast.error{background:#ffd8d6;color:#b41e1e;border:1px solid var(--danger)}
+html.dark-mode .toast.success{background:#1a3a2a;color:#b7eb8f;border:1px solid var(--success)}
+html.dark-mode .toast.error{background:#3a1a1a;color:#ffa39e;border:1px solid var(--danger)}
+
+/* ─── History tab ────────────────────────────────────────────────────────── */
+.history-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:8px;cursor:pointer;transition:all .2s}
+.history-item:hover{background:var(--hover-bg);border-color:var(--border-strong)}
+.history-item .h-title{font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px}
+.history-item .h-meta{font-size:12px;color:var(--text-ter);display:flex;gap:12px}
+.history-item .h-actions{display:flex;gap:6px;margin-top:6px}
+.history-empty{text-align:center;padding:40px 20px;color:var(--muted)}
+.history-empty p{margin-bottom:8px}
+.history-empty a{color:var(--primary);cursor:pointer}
+.history-detail-msg{padding:12px;background:var(--surface);border-radius:var(--radius-sm);margin-bottom:8px;border-left:3px solid var(--border)}
+.history-detail-msg .hd-role{font-size:11px;color:var(--text-ter);margin-bottom:4px}
+.history-detail-msg .hd-name{font-weight:600;font-size:14px}
+.history-detail-msg .hd-text{font-size:13px;margin-top:4px;line-height:1.7;color:var(--text)}
+.history-detail-report{background:var(--surface);border-radius:var(--radius-sm);padding:16px;margin-top:12px}
+.history-detail-report h4{color:var(--primary);margin-bottom:8px}
+.history-detail-report .hd-summary{font-size:13px;line-height:1.7;white-space:pre-wrap}
+.h-del-btn{color:var(--danger);cursor:pointer}
+
+/* ─── Modal ──────────────────────────────────────────────────────────────── */
+.rt-modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.55);z-index:1000;display:flex;align-items:center;justify-content:center}
+.rt-modal{background:var(--panel);border-radius:var(--radius-card);padding:24px;min-width:340px;max-width:460px;box-shadow:0 6px 16px rgba(0,0,0,.4);border:1px solid var(--border)}
+.rt-modal h3{font-size:15px;font-weight:600;margin-bottom:12px}
+.rt-modal .btn-row{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+
+/* ─── Stream indicator ───────────────────────────────────────────────────── */
+.stream-dot{display:inline-block;animation:blink 1s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
 @keyframes fadeIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+
+/* ─── Scrollbar ──────────────────────────────────────────────────────────── */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--border-strong)}
+
+/* ─── Selection ──────────────────────────────────────────────────────────── */
+::selection{background:var(--primary-tint);color:var(--text)}
 </style>
-</head>
+<script>
+// Detect parent frame theme and apply to iframe
+(function(){
+  try {
+    var parentHtml = window.parent.document.documentElement;
+    if (parentHtml.classList.contains('dark-mode')) {
+      document.documentElement.classList.add('dark-mode');
+    }
+    // Listen for theme changes in parent
+    var observer = new MutationObserver(function() {
+      var isDark = parentHtml.classList.contains('dark-mode');
+      document.documentElement.classList.toggle('dark-mode', isDark);
+    });
+    observer.observe(parentHtml, { attributes: true, attributeFilter: ['class'] });
+  } catch(e) {
+    // Fallback: use prefers-color-scheme
+    var mq = window.matchMedia('(prefers-color-scheme: dark)');
+    if (mq.matches) document.documentElement.classList.add('dark-mode');
+    mq.addListener(function(e) {
+      document.documentElement.classList.toggle('dark-mode', e.matches);
+    });
+  }
+})();
+</script></head>
 <body>
 
 <div id="toast" class="toast"></div>
@@ -108,6 +254,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
   <div class="rt-tabs">
     <div class="rt-tab active" data-tab="discuss">💬 讨论</div>
     <div class="rt-tab" data-tab="agents">🤖 辩手管理</div>
+    <div class="rt-tab" data-tab="history">📋 历史记录</div>
   </div>
 
   <!-- Tab: Discuss -->
@@ -134,6 +281,44 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
       <div id="agents-config"></div>
       <div style="display:flex;gap:8px;margin-top:8px">
         <button class="btn btn-ghost btn-sm" onclick="addAgentRow()">＋ 添加参与者</button>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+      <div class="section-card" style="padding:12px 16px;display:flex;gap:16px;flex-wrap:wrap;align-items:center;margin-bottom:0;width:100%">
+        <div style="display:flex;align-items:center;gap:8px">
+          <label style="font-size:13px;color:var(--text-sec);font-weight:500">模式</label>
+          <select id="mode-select" style="padding:5px 10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:13px;outline:none">
+            <option value="discuss">🎙️ 标准讨论（含裁判总结）</option>
+            <option value="brainstorm">💡 头脑风暴（自由发散）</option>
+          </select>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <label style="font-size:13px;color:var(--text-sec);font-weight:500">轮数</label>
+          <input type="number" id="rounds-input" value="3" min="1" max="10" style="width:60px;padding:5px 8px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:13px;outline:none;text-align:center">
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <input type="checkbox" id="judge-toggle" checked style="accent-color:var(--primary);width:16px;height:16px" onchange="toggleJudgeConfig()">
+          <label for="judge-toggle" style="font-size:13px;color:var(--text-sec);cursor:pointer">⚖️ 裁判总结</label>
+        </div>
+        <div id="judge-config" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <div id="judge-ready" style="display:none;font-size:13px;color:var(--success,#52c41a)">✅ 裁判智能体已就绪，请从上方辩手列表中勾选</div>
+          <div id="judge-create" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <div style="display:flex;align-items:center;gap:6px">
+              <label style="font-size:12px;color:var(--text-ter)">Provider</label>
+              <select id="judge-provider" style="padding:4px 8px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:12px;outline:none" onchange="updateJudgeModel()">
+                <option value="">选择</option>
+              </select>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px">
+              <label style="font-size:12px;color:var(--text-ter)">模型</label>
+              <select id="judge-model" style="padding:4px 8px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:12px;outline:none">
+                <option value="">选择</option>
+              </select>
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="createJudgeAgent()" title="创建为辩手">＋ 创建裁判智能体</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -197,6 +382,22 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
       </div>
     </div>
   </div>
+
+  <!-- Tab: History -->
+  <div class="rt-tab-content" id="tab-history">
+    <div class="section-card" id="history-list-view">
+      <h3>📋 历史讨论记录</h3>
+      <div id="history-list"></div>
+    </div>
+    <div class="section-card" id="history-detail-view" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <button class="btn btn-ghost btn-sm" onclick="showHistoryList()">← 返回列表</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteCurrentHistory()">🗑 删除</button>
+      </div>
+      <div id="history-detail-content"></div>
+    </div>
+  </div>
+
 </div>
 
 <script>
@@ -239,8 +440,9 @@ document.querySelectorAll('.rt-tab').forEach(el => {
     el.classList.add('active');
     $(`tab-${el.dataset.tab}`).classList.add('active');
     if (el.dataset.tab === 'agents') { loadPersonas(); loadDebaters(); }
-  if (el.dataset.tab === 'discuss') {
+    if (el.dataset.tab === 'discuss') {
     loadDebatersForPick();
+    updateJudgeConfigUI();
     // Sync manual toggle UI
     const manual = $('toggle-manual');
     const manualSection = $('manual-config-section');
@@ -257,7 +459,10 @@ document.querySelectorAll('.rt-tab').forEach(el => {
         manualSection.style.display = 'none';
       }
     }
-  }
+    }
+    if (el.dataset.tab === 'history') {
+      loadHistoryList();
+    }
   });
 });
 
@@ -268,6 +473,20 @@ async function loadProviders() {
     providers = (data || []).filter(p => p.provider_id && p.models && p.models.length > 0);
   } catch(e) { providers = []; }
   populateProviderSelects();
+  populateJudgeProvider();
+}
+
+function populateJudgeProvider() {
+  const jsel = $('judge-provider');
+  if (!jsel || providers.length === 0) return;
+  jsel.innerHTML = '<option value="">选择</option>';
+  providers.forEach(p => {
+    jsel.innerHTML += `<option value="${p.provider_id}">${p.provider||p.provider_id}</option>`;
+  });
+  // Default to a provider that has an API key configured, otherwise first with models
+  const withKey = providers.find(p => p.api_key && p.models && p.models.length > 0);
+  const fallback = withKey || providers.find(p => p.models && p.models.length > 0) || providers[0];
+  if (fallback) { jsel.value = fallback.provider_id; updateJudgeModel(); }
 }
 
 function populateProviderSelects() {
@@ -387,6 +606,7 @@ async function loadDebaters() {
     debaters = await api('/debaters');
   } catch(e) { debaters = []; }
   renderDebaterList();
+  updateJudgeConfigUI();
   return debaters;
 }
 
@@ -398,17 +618,92 @@ function renderDebaterList() {
     return;
   }
   container.innerHTML = '<div class="agent-list">' + debaters.map(a => `
-    <div class="agent-row">
+    <div class="agent-row" id="agent-row-${a.agent_id}">
       <div class="agent-row-info">
         <div class="agent-row-name">${personaIcons[a.persona_id]||'🤖'} ${a.name}</div>
         <div class="agent-row-meta">${a.model} · ${a.stance||'无立场'} · ${a.agent_id}</div>
       </div>
       <span class="agent-row-status ${a.enabled !== false ? '' : 'inactive'}">${a.enabled !== false ? '✅ 就绪' : '⛔ 停用'}</span>
       <div class="agent-row-actions">
+        <button class="btn btn-sm btn-ghost" onclick="editDebater('${a.agent_id}')">✏️ 编辑</button>
         <button class="btn btn-danger btn-sm" onclick="deleteAgent('${a.agent_id}')">🗑 删除</button>
       </div>
     </div>
   `).join('') + '</div>';
+}
+
+function editDebater(agentId) {
+  const a = debaters.find(d => d.agent_id === agentId);
+  if (!a) return;
+  const row = $('agent-row-' + agentId);
+  if (!row) return;
+  // Replace row with inline edit form
+  row.innerHTML = `
+    <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:end;width:100%">
+      <div style="flex:1;min-width:120px">
+        <label style="font-size:11px;color:var(--muted)">Provider</label>
+        <select id="edit-provider-${agentId}" style="width:100%;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px"
+          onchange="editProviderChange('${agentId}')">
+          <option value="">选择</option>
+          ${providers.map(p => `<option value="${p.provider_id}" ${p.provider_id===a.provider?'selected':''}>${p.provider||p.provider_id}</option>`).join('')}
+        </select>
+      </div>
+      <div style="flex:1;min-width:120px">
+        <label style="font-size:11px;color:var(--muted)">模型</label>
+        <select id="edit-model-${agentId}" style="width:100%;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px">
+          <option value="">选择</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:4px;align-items:end;padding-bottom:2px">
+        <button class="btn btn-primary btn-sm" onclick="saveDebaterEdit('${agentId}')">💾 保存</button>
+        <button class="btn btn-ghost btn-sm" onclick="loadDebaters()">取消</button>
+      </div>
+    </div>
+  `;
+  // Populate model dropdown for current provider
+  const prov = providers.find(p => p.provider_id === a.provider);
+  const msel = document.getElementById('edit-model-' + agentId);
+  if (prov && prov.models) {
+    for (const m of prov.models) {
+      const mid = typeof m === 'string' ? m : (m.id || m);
+      const mname = typeof m === 'string' ? m : (m.name || m.id || m);
+      msel.innerHTML += `<option value="${mid}" ${mid===a.model?'selected':''}>${mname}</option>`;
+    }
+  }
+}
+
+function editProviderChange(agentId) {
+  const pid = document.getElementById('edit-provider-' + agentId).value;
+  const msel = document.getElementById('edit-model-' + agentId);
+  msel.innerHTML = '<option value="">选择</option>';
+  if (!pid) return;
+  const prov = providers.find(p => p.provider_id === pid);
+  if (prov && prov.models) {
+    for (const m of prov.models) {
+      const mid = typeof m === 'string' ? m : (m.id || m);
+      const mname = typeof m === 'string' ? m : (m.name || m.id || m);
+      msel.innerHTML += `<option value="${mid}">${mname}</option>`;
+    }
+  }
+}
+
+async function saveDebaterEdit(agentId) {
+  const provider = document.getElementById('edit-provider-' + agentId).value;
+  const model = document.getElementById('edit-model-' + agentId).value;
+  if (!provider || !model) {
+    toast('请选择 Provider 和模型', 'error');
+    return;
+  }
+  try {
+    await api('/debaters/' + agentId, {
+      method: 'PUT',
+      body: JSON.stringify({ provider, model }),
+    });
+    toast('更新成功');
+    loadDebaters();
+  } catch(e) {
+    toast('更新失败: ' + e.message, 'error');
+  }
 }
 
 async function deleteAgent(agentId) {
@@ -503,6 +798,67 @@ function updateRoleName(sel) {
   if (nameInput && !nameInput.dataset.custom) nameInput.value = names[sel.value] || '参与者';
 }
 
+function updateJudgeModel() {
+  const pid = $('judge-provider').value;
+  const msel = $('judge-model');
+  msel.innerHTML = '<option value="">选择</option>';
+  if (!pid) return;
+  const prov = providers.find(p => p.provider_id === pid);
+  if (prov && prov.models) {
+    for (const m of prov.models) {
+      const mid = typeof m === 'string' ? m : (m.id || m);
+      const mname = typeof m === 'string' ? m : (m.name || m.id || m);
+      msel.innerHTML += `<option value="${mid}">${mname}</option>`;
+    }
+  }
+}
+
+function toggleJudgeConfig() {
+  const el = $('judge-config');
+  if ($('judge-toggle').checked) {
+    el.style.display = 'flex';
+  } else {
+    el.style.display = 'none';
+  }
+}
+
+function updateJudgeConfigUI() {
+  const hasJudge = debaters && Array.isArray(debaters) && debaters.some(d => d.name === '裁判');
+  $('judge-ready').style.display = hasJudge ? '' : 'none';
+  $('judge-create').style.display = hasJudge ? 'none' : '';
+}
+
+async function createJudgeAgent() {
+  const provider = $('judge-provider').value;
+  const model = $('judge-model').value;
+  if (!provider || !model) {
+    toast('请先选择裁判的 Provider 和模型', 'error');
+    return;
+  }
+  // Pick a suitable persona for the judge
+  try {
+    const personas = await api('/personas');
+    const judgePersona = personas.find(p =>
+      /裁判|法官|judge|中立|评审|仲裁/i.test(p.name + p.description)
+    ) || personas[0];
+    if (!judgePersona) { toast('无人设模板可用', 'error'); return; }
+    const result = await api('/debaters', {
+      method: 'POST',
+      body: JSON.stringify({
+        template_id: judgePersona.id,
+        name: '裁判',
+        provider: provider,
+        model: model,
+        stance: '中立裁判',
+      }),
+    });
+    toast('✅ 裁判智能体创建成功！');
+    loadDebaters();
+  } catch(e) {
+    toast('创建裁判失败: ' + e.message, 'error');
+  }
+}
+
 function updateModels(sel) {
   const row = sel.closest('.agent-input-row');
   const msel = row.querySelector('.a-model');
@@ -523,6 +879,9 @@ async function startDiscussion() {
   const topic = $('topic').value.trim();
   if (!topic) { toast('请输入讨论话题', 'error'); return; }
 
+  const mode = $('mode-select').value;
+  const enableJudge = $('judge-toggle').checked;
+
   const pickedCbs = document.querySelectorAll('.pick-agent-cb:checked:not(:disabled)');
   const useManual = $('toggle-manual') && $('toggle-manual').checked;
   let agents = [];
@@ -531,13 +890,25 @@ async function startDiscussion() {
     // Use created agents
     agents = Array.from(pickedCbs).map(cb => {
       const a = debaters.find(d => d.agent_id === cb.value);
-      return a ? { agent_id: a.agent_id, name: a.name, role: 'debater', stance: a.stance || '' } : null;
+      if (!a) return null;
+      const role = (a.name === '裁判' || a.name === '主持人') ? a.name === '主持人' ? 'host' : 'judge' : 'debater';
+      return { agent_id: a.agent_id, name: a.name, role: role, stance: a.stance || '' };
     }).filter(Boolean);
-    // Auto-add host and judge if needed
-    const hasHost = agents.some(a => a.role === 'host');
-    const hasJudge = agents.some(a => a.role === 'judge');
-    if (!hasHost) agents.unshift({ agent_id: agents[0]?.agent_id || '', name: '主持人', role: 'host', stance: '中立主持' });
-    if (!hasJudge) agents.push({ agent_id: agents[agents.length-1]?.agent_id || '', name: '裁判', role: 'judge', stance: '中立裁判' });
+    // Auto-add host, judge based on mode and settings
+    if (mode !== 'brainstorm') {
+      const hasHost = agents.some(a => a.role === 'host');
+      const hasJudge = agents.some(a => a.role === 'judge' || a.name === '裁判');
+      if (!hasHost) agents.unshift({ agent_id: agents[0]?.agent_id || '', name: '主持人', role: 'host', stance: '中立主持' });
+      if (enableJudge && !hasJudge) {
+        // Try to find a created judge agent in the debaters list
+        const judgeAgent = debaters.find(d => d.name === '裁判' && !agents.some(a => a.agent_id === d.agent_id));
+        if (judgeAgent) {
+          agents.push({ agent_id: judgeAgent.agent_id, name: judgeAgent.name, role: 'judge', stance: judgeAgent.stance || '中立裁判' });
+        } else {
+          agents.push({ agent_id: '', name: '裁判', role: 'judge', stance: '中立裁判' });
+        }
+      }
+    }
   } else {
     // Manual config
     const rows = document.querySelectorAll('#agents-config .agent-input-row');
@@ -560,11 +931,28 @@ async function startDiscussion() {
   $('stop-btn').style.display = 'inline-flex';
   discussionActive = true;
 
-  const body = { topic, mode: 'discuss', agents };
-  if (pickedCbs.length > 0 && !useManual) body.judge = agents.find(a => a.role === 'judge') || agents[agents.length-1];
+  const endpoint = mode === 'brainstorm' ? '/brainstorm' : '/discuss';
+  const body = { topic, mode, agents, rounds: parseInt($('rounds-input').value) || 3 };
+  if (mode !== 'brainstorm' && enableJudge) {
+    // If a judge agent is picked from the list, use its provider/model
+    const pickedJudge = agents.find(a => a.name === '裁判' || a.role === 'judge');
+    if (pickedJudge) {
+      const d = debaters.find(d => d.agent_id === pickedJudge.agent_id);
+      if (d && d.provider && d.model) {
+        body.judge = { provider: d.provider, model: d.model, name: '裁判', role: 'judge', stance: '中立裁判' };
+      }
+    } else {
+      // Fallback to manual config selects
+      const jp = $('judge-provider').value;
+      const jm = $('judge-model').value;
+      if (jp && jm) {
+        body.judge = { provider: jp, model: jm, name: '裁判', role: 'judge', stance: '中立裁判' };
+      }
+    }
+  }
 
   try {
-    const resp = await api('/discuss', { method:'POST', body:JSON.stringify(body), raw:true });
+    const resp = await api(endpoint, { method:'POST', body:JSON.stringify(body), raw:true });
     const reader = resp.body.getReader();
     const decoder = new TextDecoder();
     let buffer = '';
@@ -636,6 +1024,102 @@ function stopDiscussion() {
   $('stop-btn').style.display = 'none';
 }
 
+// ── History ──
+let _currentHistoryHid = null;
+
+async function loadHistoryList() {
+  try {
+    const list = await api('/history');
+    const container = $('history-list');
+    if (!container) return;
+    if (!list || list.length === 0) {
+      container.innerHTML = '<div class="history-empty"><p>📭 暂无历史讨论记录</p><p style="font-size:12px">完成一次讨论后，记录会自动保存在这里</p></div>';
+      return;
+    }
+    container.innerHTML = list.map(h => `
+      <div class="history-item" onclick="showHistoryDetail('${h.hid}')">
+        <div class="h-title">🎯 ${h.topic}</div>
+        <div class="h-meta">${h.mode} · ${new Date(h.created_at).toLocaleString('zh-CN')} · ID: ${h.hid}</div>
+        <div class="h-actions">
+          <span class="btn btn-sm btn-ghost" onclick="event.stopPropagation();deleteHistory('${h.hid}')">🗑 删除</span>
+        </div>
+      </div>
+    `).join('');
+  } catch(e) {
+    $('history-list').innerHTML = '<div class="history-empty"><p>❌ 加载失败</p><p style="font-size:12px">' + e.message + '</p></div>';
+  }
+}
+
+async function showHistoryDetail(hid) {
+  _currentHistoryHid = hid;
+  try {
+    const d = await api('/history/' + hid);
+    if (!d || d.error) {
+      toast('记录不存在', 'error');
+      return;
+    }
+    $('history-list-view').style.display = 'none';
+    $('history-detail-view').style.display = 'block';
+
+    const roleLabel = { host:'🎙️ 主持', debater:'💬 辩手', judge:'⚖️ 裁判' };
+    let msgsHtml = '';
+    if (d.messages && d.messages.length > 0) {
+      msgsHtml = d.messages.map(m => `
+        <div class="history-detail-msg">
+          <div class="hd-name">${roleLabel[m.role]||'👤'} ${m.name||''}</div>
+          <div class="hd-text">${formatContent(m.content||'')}</div>
+        </div>
+      `).join('');
+    } else {
+      msgsHtml = '<div class="history-empty"><p>无消息记录</p></div>';
+    }
+
+    let reportHtml = '';
+    if (d.report) {
+      const r = d.report;
+      reportHtml = `<div class="history-detail-report">
+        <h4>📊 讨论总结</h4>
+        <div class="hd-summary">${r.summary||''}</div>
+        ${r.consensus && r.consensus.length ? `<h4>✅ 共识</h4><ul>${r.consensus.map(c => '<li>'+c+'</li>').join('')}</ul>` : ''}
+        ${r.recommendations && r.recommendations.length ? `<h4>💡 建议</h4><ul>${r.recommendations.map(c => '<li>'+c+'</li>').join('')}</ul>` : ''}
+      </div>`;
+    }
+
+    $('history-detail-content').innerHTML = `
+      <div class="section-card" style="margin-bottom:12px">
+        <h3>🎯 ${d.topic}</h3>
+        <div class="h-meta">${d.mode} · ${new Date(d.created_at).toLocaleString('zh-CN')} · ID: ${d.hid}</div>
+      </div>
+      ${msgsHtml}
+      ${reportHtml}
+    `;
+  } catch(e) {
+    toast('加载详情失败: ' + e.message, 'error');
+  }
+}
+
+function showHistoryList() {
+  _currentHistoryHid = null;
+  $('history-list-view').style.display = 'block';
+  $('history-detail-view').style.display = 'none';
+  loadHistoryList();
+}
+
+async function deleteHistory(hid) {
+  if (!confirm('确定删除这条讨论记录？')) return;
+  try {
+    await api('/history/' + hid, { method: 'DELETE' });
+    toast('已删除');
+    loadHistoryList();
+  } catch(e) {
+    toast('删除失败: ' + e.message, 'error');
+  }
+}
+
+function deleteCurrentHistory() {
+  if (_currentHistoryHid) deleteHistory(_currentHistoryHid);
+}
+
 // ── Init ──
 function getModelId(prov) {
   if (!prov || !prov.models || !prov.models.length) return '';
@@ -648,6 +1132,8 @@ async function init() {
   await loadProviders();
   loadPersonas();
   await loadDebaters();
+  // Populate the agent pick list for the discuss tab (the tab is active by default)
+  await loadDebatersForPick();
   // If there are already created agents, don't add manual rows.
   if (debaters.length > 0) return; // user has agents, no need for manual defaults
   if (providers.length === 0) { addAgentRow('','','主持人','host','中立客观'); addAgentRow('','','嘉宾A','debater','支持方'); addAgentRow('','','嘉宾B','debater','反对方'); return; }

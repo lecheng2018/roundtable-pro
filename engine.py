@@ -150,7 +150,7 @@ async def get_agent_response(
 async def host_config(provider_manager, topic: str, mode: str, max_agents: int) -> RoundConfig:
     messages = [
         {"role": "system", "content": HOST_PROMPT},
-        {"role": "user", "content": f"话题：{topic}\n模式：{mode}\n最多辩手数：{max_agents}\n\n请分析这个话题并给出配置。注意：必须包含provider和model字段，使用可用的provider ID（如github-models、deepseek等）。"}
+        {"role": "user", "content": f"话题：{topic}\n模式：{mode}\n最多辩手数：{max_agents}\n\n请分析这个话题并给出配置。注意：必须包含provider和model字段（如opencode/deepseek-v4-flash-free）。"}
     ]
     text = await call_model(provider_manager, DEFAULT_HOST, messages, temperature=0.3)
     text = _extract_json(text)
@@ -181,6 +181,61 @@ def _extract_json(text: str) -> str:
     return text.strip()
 
 
+def _safe_parse_json(text: str) -> Optional[dict]:
+    """Try to parse JSON with multiple fallback strategies."""
+    if not text or not text.strip():
+        return None
+    text = text.strip()
+    # Strategy 1: direct parse with strict=False (handles control chars)
+    try:
+        return json.loads(text, strict=False)
+    except json.JSONDecodeError:
+        pass
+    # Strategy 2: find outermost {...} and try
+    brace_start = text.find("{")
+    brace_end = text.rfind("}")
+    if brace_start >= 0 and brace_end > brace_start:
+        candidate = text[brace_start:brace_end+1]
+        try:
+            return json.loads(candidate, strict=False)
+        except json.JSONDecodeError:
+            pass
+    # Strategy 3: try to fix single quotes to double quotes
+    try:
+        import ast
+        return ast.literal_eval(text)
+    except (ValueError, SyntaxError):
+        pass
+    if brace_start >= 0 and brace_end > brace_start:
+        try:
+            candidate = text[brace_start:brace_end+1]
+            return ast.literal_eval(candidate)
+        except (ValueError, SyntaxError):
+            pass
+    # Strategy 4: manual repair — common LLM JSON errors
+    import re as _re
+    if brace_start >= 0 and brace_end > brace_start:
+        candidate = text[brace_start:brace_end+1]
+        # Fix single quotes
+        candidate = _re.sub(r"(?<!\\)'(.*?)'(?=\s*:)", r'"\1"', candidate)
+        candidate = _re.sub(r":\s*'(.*?)'(,?\s*[}\]])", r': "\1"\2', candidate)
+        # Remove trailing commas
+        candidate = _re.sub(r",\s*([}\]])", r"\1", candidate)
+        try:
+            return json.loads(candidate, strict=False)
+        except json.JSONDecodeError:
+            pass
+    # Strategy 5: strip control chars and retry
+    if brace_start >= 0 and brace_end > brace_start:
+        candidate = text[brace_start:brace_end+1]
+        candidate = _re.sub(r"[\x00-\x1f]", "", candidate)
+        try:
+            return json.loads(candidate)
+        except json.JSONDecodeError:
+            pass
+    return None
+
+
 async def run_roundtable(provider_manager, req: DiscussRequest, stream: EventStream):
     hid = str(uuid.uuid4())[:8]
     
@@ -190,11 +245,13 @@ async def run_roundtable(provider_manager, req: DiscussRequest, stream: EventStr
             mode=req.mode,
             agent_count=len(req.agents),
             roles=req.agents,
-            rounds=3,
+            rounds=req.rounds,
             need_search=False
         )
     else:
         config = await host_config(provider_manager, req.topic, req.mode, req.max_agents)
+        # 🔴 Force user's rounds setting (host_config may override it)
+        config.rounds = req.rounds
 
     discussion = Discussion(
         hid=hid, topic=req.topic, mode=config.mode,
@@ -276,6 +333,9 @@ async def run_roundtable(provider_manager, req: DiscussRequest, stream: EventStr
     # Judge summary
     try:
         judge_agent = req.judge or (req.agents[0] if req.agents else DEFAULT_JUDGE)
+        # Skip judge if provider/model is empty
+        if not judge_agent.provider or not judge_agent.model:
+            raise ValueError(f"Judge provider/model not configured (provider='{judge_agent.provider}', model='{judge_agent.model}')")
         judge_messages = [
             {"role": "system", "content": JUDGE_PROMPT},
             {"role": "user", "content": f"请对以下讨论进行总结和评判。\n\n讨论话题：{req.topic}\n\n完整记录：\n{history_text}"}
@@ -285,7 +345,13 @@ async def run_roundtable(provider_manager, req: DiscussRequest, stream: EventStr
             temperature=0.3
         )
         judge_text = _extract_json(judge_text)
-        report_data = json.loads(judge_text)
+        report_data = _safe_parse_json(judge_text)
+        if report_data is None or not isinstance(report_data, dict):
+            report_data = {
+                "summary": judge_text,
+                "consensus": [],
+                "recommendations": []
+            }
     except Exception as e:
         report_data = {
             "summary": f"总结生成失败：{str(e)}",

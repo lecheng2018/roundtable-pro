@@ -48,6 +48,7 @@ class DiscussRequest(BaseModel):
     topic: str
     mode: str = "discuss"
     max_agents: int = 4
+    rounds: int = 3
     agents: List[AgentConfig] = []
     brainstorm: bool = False
     economy: bool = False

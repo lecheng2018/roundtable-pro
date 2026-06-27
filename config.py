@@ -1,7 +1,7 @@
 from .models import AgentConfig
 
-DEFAULT_HOST = AgentConfig(provider="github-models", model="gpt-4o-mini", role="host", name="主持人", stance="中立客观")
-DEFAULT_JUDGE = AgentConfig(provider="github-models", model="gpt-4o-mini", role="judge", name="裁判", stance="中立公正")
+DEFAULT_HOST = AgentConfig(provider="opencode", model="deepseek-v4-flash-free", role="host", name="主持人", stance="中立客观")
+DEFAULT_JUDGE = AgentConfig(provider="opencode", model="deepseek-v4-flash-free", role="judge", name="裁判", stance="中立公正")
 
 ROLE_TEMPLATES = {
     "host": "主持人：引导讨论，提出追问，控制节奏",
@@ -19,8 +19,8 @@ HOST_PROMPT = """你是圆桌讨论的主持人。你的职责是：
 {
   "mode": "discuss" 或 "brainstorm",
   "roles": [
-    {"provider": "github-models", "model": "gpt-4o-mini", "name": "辩手A", "stance": "支持立场"},
-    {"provider": "deepseek", "model": "deepseek-chat", "name": "辩手B", "stance": "反对立场"}
+    {"provider": "opencode", "model": "deepseek-v4-flash-free", "name": "辩手A", "stance": "支持立场"},
+    {"provider": "opencode", "model": "deepseek-v4-flash-free", "name": "辩手B", "stance": "反对立场"}
   ],
   "rounds": 2,
   "need_search": false

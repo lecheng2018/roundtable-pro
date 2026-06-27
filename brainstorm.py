@@ -3,7 +3,7 @@ from .models import DiscussRequest, AgentConfig, Message, RoundConfig, Discussio
 from .config import DEFAULT_HOST, HOST_PROMPT
 from .storage import Storage
 from .sse import EventStream
-from .engine import call_model, _extract_json
+from .engine import call_model, get_agent_response, host_config, _extract_json
 
 
 BRAINSTORM_PROMPT = """你叫{name}，是一名头脑风暴参与者。
@@ -24,12 +24,14 @@ async def run_brainstorm(provider_manager, req: DiscussRequest, stream: EventStr
             mode="brainstorm",
             agent_count=len(req.agents),
             roles=req.agents,
-            rounds=3,
+            rounds=req.rounds,
             need_search=False
         )
     else:
         config = await host_config(provider_manager, req.topic, req.mode, req.max_agents)
         config.mode = "brainstorm"
+        # 🔴 Force user's rounds setting (host_config may override it)
+        config.rounds = req.rounds
 
     discussion = Discussion(
         hid=hid, topic=req.topic, mode="brainstorm",
@@ -58,7 +60,7 @@ async def run_brainstorm(provider_manager, req: DiscussRequest, stream: EventStr
                 msgs.append({"role": "user", "content": f"请围绕话题[{req.topic}]自由发散，提出有价值的观点和创意。"})
 
             try:
-                text = await call_model(provider_manager, agent, msgs, temperature=0.8)
+                text = await get_agent_response(provider_manager, agent, msgs, temperature=0.8)
             except Exception as e:
                 text = f"[{name} 发言失败：{str(e)}]"
 
