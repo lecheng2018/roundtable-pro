@@ -2,6 +2,7 @@ import os
 import sys
 import json
 import logging
+import shutil
 import uuid
 from datetime import datetime
 from pathlib import Path
@@ -36,6 +37,83 @@ WORKSPACES_ROOT = Path(
     )
 )
 DEBATER_PREFIX = "rdeb_"  # Prefix for roundtable debater agents
+
+# ── State & plugin lifecycle ──────────────────────────────────────
+STATE_PATH = Path(plugin_dir) / ".qwenpaw-roundtable-state.json"
+ROLE_MARKER = "<!-- managed-by: roundtable-pro -->"
+
+
+def _load_state() -> dict:
+    if STATE_PATH.exists():
+        try:
+            return json.loads(STATE_PATH.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+    return {"version": 1, "agents_created": [], "installed_at": None}
+
+
+def _save_state(state: dict):
+    STATE_PATH.write_text(json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+# ── Plugin lifecycle hooks ────────────────────────────────────────
+
+async def _on_startup():
+    """Startup validation for roundtable-pro plugin."""
+    logger.info("RoundTable-Pro startup check…")
+    issues = []
+    if not PERSONAS_DIR.exists():
+        issues.append(f"Personas directory not found: {PERSONAS_DIR}")
+    data_dir = Path(plugin_dir) / "data"
+    data_dir.mkdir(exist_ok=True)
+    state = _load_state()
+    if state.get("installed_at") is None:
+        state["installed_at"] = datetime.utcnow().isoformat()
+        _save_state(state)
+    if issues:
+        logger.warning("RoundTable-Pro startup issues: %s", "; ".join(issues))
+    else:
+        logger.info("RoundTable-Pro startup OK")
+
+
+async def _on_uninstall(plugin_id: str = "", delete_files: bool = False):
+    """Cleanup all roundtable-pro agents and data on uninstall."""
+    logger.info("RoundTable-Pro uninstall: cleaning up agents & data…")
+
+    # 1. Collect all rdeb_ agents
+    try:
+        from qwenpaw.config.utils import load_config, save_config
+
+        config = load_config()
+        to_remove = [
+            aid for aid in config.agents.profiles
+            if aid.startswith(DEBATER_PREFIX)
+        ]
+        for aid in to_remove:
+            ws = config.agents.profiles[aid].workspace_dir
+            if ws and os.path.isdir(ws):
+                shutil.rmtree(ws, ignore_errors=True)
+                logger.info("  Removed workspace: %s", ws)
+            del config.agents.profiles[aid]
+            if aid in config.agents.agent_order:
+                config.agents.agent_order.remove(aid)
+            logger.info("  Removed agent: %s", aid)
+        save_config(config)
+    except Exception as e:
+        logger.warning("  Could not clean up agents: %s", e)
+
+    # 2. Remove data directory
+    data_dir = Path(plugin_dir) / "data"
+    if data_dir.exists():
+        shutil.rmtree(data_dir, ignore_errors=True)
+        logger.info("  Removed data/ directory")
+
+    # 3. Remove state file
+    if STATE_PATH.exists():
+        STATE_PATH.unlink(missing_ok=True)
+        logger.info("  Removed state file")
+
+    logger.info("RoundTable-Pro uninstall cleanup complete")
 
 
 # ── Persona template helpers ─────────────────────────────────────
@@ -230,6 +308,30 @@ def _create_debater_workspace(
 
     # Write MEMORY.md
     (ws_dir / "MEMORY.md").write_text(f"# {name} 的记忆\n\n这是{name}在圆桌讨论中的初始记忆。\n", encoding="utf-8")
+
+    # Write ROLE.md — strong role injection like Superpowers' SUPERPOWERS.md
+    role_md = (
+        f"{ROLE_MARKER}\n"
+        f"# {name} — 角色定义\n\n"
+        f"## 你是谁\n"
+        f"{template.description}\n\n"
+        f"## 角色信条\n"
+        f"{template.soul_md or '认真参与圆桌讨论，基于你的专业视角发表观点。'}\n\n"
+        f"## 讨论规则\n"
+        f"- 你正在参与一场多智能体圆桌讨论\n"
+        f"- 讨论话题由主持人给出\n"
+        f"- 每次发言都要严格基于自己{name}的身份和专业知识\n"
+        f"- 不要跳出角色，不要说自己'作为一个AI助手'\n"
+        f"- 直接表达观点，不要询问'需要我做什么'\n"
+        f"- 回答应当简洁有深度（200字以内）\n"
+        f"- 可以反驳、补充、深化其他人的观点\n\n"
+        f"## 禁止\n"
+        f"- 不要谦虚推让，你是这个领域的专家\n"
+        f"- 不要长篇大论，每次发言聚焦1-2个核心论点\n"
+        f"- 不要偏离自己的角色设定\n\n"
+        f"**记住：你正在参与圆桌讨论，你是有专业身份的{name}，请全力以赴。**\n"
+    )
+    (ws_dir / "ROLE.md").write_text(role_md, encoding="utf-8")
 
     # Write agent.json
     agent_config = _build_agent_json(agent_id, name, description, str(ws_dir), provider_id, model)
@@ -455,6 +557,12 @@ async def create_debater(req: DebaterCreateRequest, request: Request):
     except Exception as e:
         logger.warning("Agent '%s' created but could not be started: %s", agent_id, e)
 
+    # Track in state
+    state = _load_state()
+    if agent_id not in state["agents_created"]:
+        state["agents_created"].append(agent_id)
+    _save_state(state)
+
     return DebaterAgent(
         agent_id=agent_id,
         name=req.name,
@@ -627,7 +735,9 @@ class RoundTableProPlugin:
     def register(self, api):
         logger.info("RoundTable-Pro 注册中...")
         api.register_http_router(router, prefix="/frontend_plugin/roundtable-pro")
-        logger.info("RoundTable-Pro 就绪")
+        api.register_startup_hook("validate", _on_startup, priority=50)
+        api.register_uninstall_hook("cleanup", _on_uninstall, priority=50)
+        logger.info("RoundTable-Pro 就绪（启动钩子+卸载钩子已注册）")
 
 
 plugin = RoundTableProPlugin()
