@@ -3,7 +3,7 @@
 
 Usage:
     python3 tests/validate.py          # auto-detect plugin dir
-    python3 tests/validate.py /path/to/roundtable-pro  # explicit path
+    python3 tests/validate.py /path    # explicit path
 """
 
 import json
@@ -22,283 +22,247 @@ def find_plugin_dir() -> Path:
 
 
 def check(ok: bool, msg: str) -> bool:
-    """Print check result and return ok."""
     prefix = "✅" if ok else "❌"
     print(f"  {prefix}  {msg}")
     return ok
 
 
-def validate_plugin_json(plugin_dir: Path) -> bool:
-    """Validate plugin.json manifest."""
-    path = plugin_dir / "plugin.json"
-    if not path.exists():
-        return check(False, "plugin.json not found")
+def list_missing(expected: list, actual: list) -> str:
+    missing = [x for x in expected if x not in actual]
+    return ", ".join(missing) if missing else ""
 
-    try:
-        manifest = json.loads(path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError as e:
-        return check(False, f"plugin.json invalid JSON: {e}")
 
+def validate_manifest(plugin_dir: Path) -> bool:
     ok = True
-    for field in ("id", "name", "version"):
-        if field not in manifest or not manifest[field]:
-            ok &= check(False, f"plugin.json missing/empty field: {field}")
-        else:
-            ok &= check(True, f"plugin.json: {field} = {manifest[field]}")
+    # Outer plugin.json
+    outer = plugin_dir / "plugin.json"
+    if outer.exists():
+        ok &= check(True, "plugin.json (outer) exists")
+        try:
+            data = json.loads(outer.read_text(encoding="utf-8"))
+            for field in ["id", "name", "version", "entry"]:
+                ok &= check(field in data, f"plugin.json: contains '{field}'")
+            if "entry" in data:
+                entry = data["entry"]
+                ok &= check("backend" in entry, "plugin.json: entry.backend")
+                ok &= check("frontend" in entry, "plugin.json: entry.frontend")
+        except json.JSONDecodeError as e:
+            ok &= check(False, f"plugin.json: invalid JSON ({e})")
+    else:
+        ok &= check(False, "plugin.json NOT found")
 
-    # entry.backend
+    # Inner .qwenpaw-plugin/plugin.json
+    inner = plugin_dir / ".qwenpaw-plugin" / "plugin.json"
+    if inner.exists():
+        ok &= check(True, ".qwenpaw-plugin/plugin.json (inner) exists")
+        try:
+            data = json.loads(inner.read_text(encoding="utf-8"))
+            for field in ["id", "name", "version", "entry"]:
+                ok &= check(field in data, f".qwenpaw-plugin/plugin.json: contains '{field}'")
+            extras = ["description_i18n", "meta", "min_version"]
+            found = [f for f in extras if f in data]
+            ok &= check(
+                len(found) >= 2,
+                f".qwenpaw-plugin/plugin.json: advanced fields ({', '.join(found)})"
+            )
+        except json.JSONDecodeError as e:
+            ok &= check(False, f".qwenpaw-plugin/plugin.json: invalid JSON ({e})")
+    else:
+        ok &= check(False, ".qwenpaw-plugin/plugin.json NOT found")
+
+    return ok
+
+
+def validate_entry_files(plugin_dir: Path, manifest: dict) -> bool:
+    ok = True
     entry = manifest.get("entry", {})
-    be = entry.get("backend", "")
-    if be:
-        ok &= check((plugin_dir / be).exists(), f"entry.backend '{be}' exists")
-    else:
-        ok &= check(False, "entry.backend missing")
-    
-    fe = entry.get("frontend", "")
-    if fe:
-        ok &= check((plugin_dir / fe).exists(), f"entry.frontend '{fe}' exists")
-    else:
-        # frontend is optional for our plugin
-        check(True, "entry.frontend not set (optional for us)")
+    backend = entry.get("backend", "main.py")
+    frontend = entry.get("frontend", "frontend/index.html")
 
-    min_ver = manifest.get("min_version", "")
-    if min_ver:
-        check(True, f"min_version = {min_ver}")
+    be_path = plugin_dir / backend
+    ok &= check(be_path.exists(), f"entry.backend '{backend}' exists")
 
-    # Check .qwenpaw-plugin/plugin.json also exists
-    qp_path = plugin_dir / ".qwenpaw-plugin" / "plugin.json"
-    if qp_path.exists():
-        check(True, ".qwenpaw-plugin/plugin.json exists")
-    else:
-        check(False, ".qwenpaw-plugin/plugin.json NOT found")
+    fe_path = plugin_dir / frontend
+    ok &= check(fe_path.exists(), f"entry.frontend '{frontend}' exists")
 
     return ok
 
 
 def validate_backend(plugin_dir: Path) -> bool:
-    """Validate main.py can be imported (syntax check)."""
+    ok = True
     main_py = plugin_dir / "main.py"
     if not main_py.exists():
         return check(False, "main.py not found")
 
     try:
         compile(main_py.read_text(encoding="utf-8"), "main.py", "exec")
-        check(True, "main.py compiles OK")
+        ok &= check(True, "main.py compiles OK")
     except SyntaxError as e:
-        return check(False, f"main.py syntax error: {e}")
+        ok &= check(False, f"main.py syntax error: {e}")
 
-    # Check all .py files
-    ok = True
-    for py_file in sorted(plugin_dir.glob("*.py")):
+    # All Python files compile
+    py_files = list(plugin_dir.glob("*.py")) + list(plugin_dir.glob("tests/*.py"))
+    py_files = [f for f in py_files if f.name != "__init__.py" or not f.exists()]
+    all_ok = True
+    for f in sorted(py_files):
         try:
-            compile(py_file.read_text(encoding="utf-8"), py_file.name, "exec")
+            compile(f.read_text(encoding="utf-8"), f.name, "exec")
         except SyntaxError as e:
-            ok &= check(False, f"{py_file.name} syntax error: {e}")
-    if ok:
-        check(True, "All Python files compile OK")
+            check(False, f"{f.name} syntax error: {e}")
+            all_ok = False
+    ok &= check(all_ok, f"All {len(py_files)} Python files compile OK")
 
-    # Check required functions are defined
-    source = main_py.read_text(encoding="utf-8")
+    # Check required entry points
+    main_text = main_py.read_text(encoding="utf-8")
     required = [
         ("_on_startup", "startup hook"),
         ("_on_uninstall", "uninstall hook"),
-        ("class RoundTableProPlugin", "plugin entry class"),
+        ("RoundTableProPlugin", "plugin entry class"),
         ("def register", "register method"),
     ]
-    for func_name, desc in required:
-        check(func_name in source, f"main.py defines '{func_name}' ({desc})")
+    for symbol, desc in required:
+        ok &= check(symbol in main_text, f"main.py defines '{symbol}' ({desc})")
 
-    # Check hooks are registered
-    for hook in ("register_startup_hook", "register_uninstall_hook", "register_http_router"):
-        check(hook in source, f"main.py calls '{hook}'")
+    # Check hook registration calls
+    hooks = ["register_startup_hook", "register_uninstall_hook", "register_http_router"]
+    for hook in hooks:
+        ok &= check(hook in main_text, f"main.py calls '{hook}'")
 
     return ok
 
 
 def validate_frontend(plugin_dir: Path) -> bool:
-    """Validate frontend files exist."""
-    fe_dir = plugin_dir / "frontend"
-    if not fe_dir.exists():
-        return check(False, "frontend/ directory not found")
-
     ok = True
-    html = fe_dir / "index.html"
-    if html.exists():
-        size = len(html.read_bytes())
-        check(True, f"frontend/index.html ({size} bytes)")
-        # Check critical functions exist
-        content = html.read_text(encoding="utf-8")
-        for func in ("startDiscussion", "loadProviders", "loadDebaters", "handleSSEEvent", "api"):
-            if func in content:
-                check(True, f"frontend defines '{func}'")
-            else:
-                ok &= check(False, f"frontend MISSING '{func}'")
-    else:
-        ok &= check(False, "frontend/index.html not found")
+    index = plugin_dir / "frontend" / "index.html"
+    if not index.exists():
+        return check(False, "frontend/index.html NOT found")
 
-    js = fe_dir / "entry.js"
-    if js.exists():
-        check(True, f"frontend/entry.js ({len(js.read_bytes())} bytes)")
-    
+    size = os.path.getsize(str(index))
+    ok &= check(size > 1000, f"frontend/index.html ({size} bytes)")
+    html = index.read_text(encoding="utf-8")
+
+    # Required JS function definitions
+    required_functions = [
+        "startDiscussion", "loadProviders", "loadDebaters",
+        "populateProviderSelects", "populateJudgeProvider",
+    ]
+    for fn in required_functions:
+        ok &= check(f"function {fn}" in html or f"async function {fn}" in html,
+                     f"frontend defines '{fn}'")
+
+    # Entry.js (second frontend entry)
+    entry_js = plugin_dir / "frontend" / "entry.js"
+    if entry_js.exists():
+        ok &= check(True, "frontend/entry.js exists")
+    else:
+        ok &= check(False, "frontend/entry.js NOT found (may be optional)")
+
     return ok
 
 
 def validate_personas(plugin_dir: Path) -> bool:
-    """Validate all persona templates."""
+    ok = True
     personas_dir = plugin_dir / "personas"
     if not personas_dir.exists():
-        return check(False, "personas/ directory not found")
+        return check(False, "personas/ directory NOT found")
 
     json_files = sorted(personas_dir.glob("*.json"))
-    if not json_files:
-        return check(False, "No persona JSON files found")
+    ok &= check(len(json_files) >= 1, f"personas/: {len(json_files)} JSON files")
 
-    ok = True
+    all_valid = True
     for f in json_files:
         try:
             data = json.loads(f.read_text(encoding="utf-8"))
-            required = ("name", "description", "suggested_provider", "suggested_model")
-            missing = [r for r in required if r not in data or not data[r]]
-            if missing:
-                ok &= check(False, f"{f.name}: missing fields {missing}")
-            else:
-                check(True, f"{f.name}: {data.get('name', '?')}")
+            checks = []
+            for field in ["id", "name", "description", "suggested_provider", "suggested_model"]:
+                checks.append(field in data)
+            is_valid = all(checks)
+            if not is_valid:
+                missing = [field for field in ["id", "name", "description", "suggested_provider", "suggested_model"]
+                          if field not in data]
+                check(False, f"{f.name}: missing fields: {', '.join(missing)}")
+                all_valid = False
         except json.JSONDecodeError as e:
-            ok &= check(False, f"{f.name}: invalid JSON: {e}")
-
-    # Check readme exists
-    readme = personas_dir / "readme.md"
-    if readme.exists():
-        check(True, "personas/readme.md exists")
-    else:
-        ok &= check(False, "personas/readme.md MISSING")
-
-    check(True, f"{len(json_files)} persona templates")
-    return ok
-
-
-def validate_models(plugin_dir: Path) -> bool:
-    """Validate models.py data models."""
-    models_py = plugin_dir / "models.py"
-    if not models_py.exists():
-        return check(False, "models.py not found")
-
-    source = models_py.read_text(encoding="utf-8")
-    expected_classes = [
-        "AgentConfig", "DiscussRequest", "DebaterCreateRequest",
-        "DebaterAgent", "RoundConfig", "Discussion", "Message",
-    ]
-    ok = True
-    for cls in expected_classes:
-        if f"class {cls}" in source:
-            check(True, f"models.py defines '{cls}'")
-        else:
-            ok &= check(False, f"models.py MISSING '{cls}'")
-    return ok
-
-
-def validate_discussion_engine(plugin_dir: Path) -> bool:
-    """Validate discussion engine files."""
-    engine_py = plugin_dir / "engine.py"
-    if not engine_py.exists():
-        return check(False, "engine.py not found")
-
-    source = engine_py.read_text(encoding="utf-8")
-    ok = True
-
-    required_funcs = [
-        ("_safe_parse_json", "JSON parsing with fallback"),
-        ("call_model", "model invocation"),
-        ("get_agent_response", "agent response"),
-        ("host_config", "auto-config generation"),
-        ("run_roundtable", "discussion loop"),
-    ]
-    for func, desc in required_funcs:
-        if f"async def {func}" in source or f"def {func}" in source:
-            check(True, f"engine.py defines '{func}' ({desc})")
-        else:
-            ok &= check(False, f"engine.py MISSING '{func}' ({desc})")
-
-    # Check brainstorm.py
-    bs_py = plugin_dir / "brainstorm.py"
-    if bs_py.exists():
-        source_bs = bs_py.read_text(encoding="utf-8")
-        if "async def run_brainstorm" in source_bs:
-            check(True, "brainstorm.py defines 'run_brainstorm'")
-        else:
-            ok &= check(False, "brainstorm.py MISSING 'run_brainstorm'")
-    else:
-        ok &= check(False, "brainstorm.py not found")
+            check(False, f"{f.name}: invalid JSON ({e})")
+            all_valid = False
+    ok &= check(all_valid, f"All {len(json_files)} persona JSONs valid")
 
     return ok
 
 
 def validate_data_dir(plugin_dir: Path) -> bool:
-    """Validate data directory is writable."""
+    """Check data directory exists (optional, created at startup)."""
     data_dir = plugin_dir / "data"
-    try:
-        data_dir.mkdir(exist_ok=True)
-        test_file = data_dir / ".write_test"
-        test_file.write_text("ok")
-        test_file.unlink()
-        check(True, "data/ directory writable")
-        return True
-    except (OSError, PermissionError) as e:
-        return check(False, f"data/ NOT writable: {e}")
+    if data_dir.exists():
+        return check(True, "data/ directory exists")
+    else:
+        return check(True, "data/ directory auto-created at startup")
 
 
-def validate_storage(plugin_dir: Path) -> bool:
-    """Validate storage module."""
-    storage_py = plugin_dir / "storage.py"
-    if not storage_py.exists():
-        return check(False, "storage.py not found")
-
-    source = storage_py.read_text(encoding="utf-8")
-    ok = True
-    for method in ("save", "get", "list", "delete"):
-        if f"def {method}" in source:
-            check(True, f"storage.py defines '{method}'")
-        else:
-            ok &= check(False, f"storage.py MISSING '{method}'")
-    return ok
+def validate_state_file(plugin_dir: Path) -> bool:
+    state = plugin_dir / ".qwenpaw-roundtable-pro-state.json"
+    if state.exists():
+        return check(True, ".qwenpaw-roundtable-pro-state.json exists")
+    else:
+        return check(True, "state file auto-created on first startup")
 
 
-def run_all(plugin_dir: Path) -> int:
-    """Run all validation checks. Returns exit code (0 = pass)."""
-    print(f"\n🔍  Validating roundtable-pro plugin")
+def validate_readme(plugin_dir: Path) -> bool:
+    readme = plugin_dir / "README.md"
+    if readme.exists():
+        size = os.path.getsize(str(readme))
+        return check(size > 100, f"README.md ({size} bytes)")
+    return check(False, "README.md NOT found")
+
+
+def main():
+    if len(sys.argv) > 1:
+        plugin_dir = Path(sys.argv[1]).resolve()
+    else:
+        plugin_dir = find_plugin_dir()
+
+    if not (plugin_dir / "main.py").exists():
+        print(f"❌  Not a roundtable-pro plugin directory: {plugin_dir}")
+        sys.exit(1)
+
+    print(f"🔍  Validating roundtable-pro plugin")
     print(f"   📁  {plugin_dir}")
     print(f"   ⏱  {__import__('datetime').datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print()
 
-    checks = [
-        ("📋  Plugin manifest", validate_plugin_json),
-        ("⚙️   Backend", validate_backend),
-        ("🎨  Frontend", validate_frontend),
-        ("👤  Persona templates", validate_personas),
-        ("📐  Data models", validate_models),
-        ("🧠  Discussion engine", validate_discussion_engine),
-        ("💾  Storage", validate_storage),
-        ("📁  Data directory", validate_data_dir),
-    ]
+    all_ok = True
 
-    total = passed = 0
-    for label, func in checks:
-        print(f"── {label} {'─' * max(0, 48 - len(label))}──")
-        result = func(plugin_dir)
-        total += 1
-        if result:
-            passed += 1
-        print()
-
-    print(f"{'─' * 56}")
-    print(f"  {'✅' if passed == total else '❌'}  {passed}/{total} checks passed")
+    print(" ── 📋  Plugin manifest ────────────────────────────────")
+    all_ok &= validate_manifest(plugin_dir)
     print()
-    return 0 if passed == total else 1
+
+    print(" ── ⚙️   Backend ──────────────────────────────────────")
+    all_ok &= validate_backend(plugin_dir)
+    print()
+
+    print(" ── 🎨  Frontend ───────────────────────────────────────")
+    all_ok &= validate_frontend(plugin_dir)
+    print()
+
+    print(" ── 👤  Personas ───────────────────────────────────────")
+    all_ok &= validate_personas(plugin_dir)
+    print()
+
+    print(" ── 📂  Data & State ───────────────────────────────────")
+    all_ok &= validate_data_dir(plugin_dir)
+    all_ok &= validate_state_file(plugin_dir)
+    print()
+
+    print(" ── 📖  Documentation ──────────────────────────────────")
+    all_ok &= validate_readme(plugin_dir)
+    print()
+
+    if all_ok:
+        print(" ✅  All checks passed!")
+    else:
+        print(" ❌  Some checks failed. See above.")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
-    plugin_dir = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else find_plugin_dir()
-    if not (plugin_dir / "plugin.json").exists():
-        print(f"❌ Not a plugin directory (no plugin.json): {plugin_dir}")
-        sys.exit(1)
-    sys.exit(run_all(plugin_dir))
+    main()

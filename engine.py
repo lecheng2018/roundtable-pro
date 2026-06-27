@@ -352,6 +352,17 @@ async def run_roundtable(provider_manager, req: DiscussRequest, stream: EventStr
                 "consensus": [],
                 "recommendations": []
             }
+        else:
+            # Normalize: ensure summary is always a plain string, not a nested dict
+            if isinstance(report_data.get("summary"), dict):
+                nested = report_data["summary"]
+                report_data["summary"] = nested.get("summary") or nested.get("text") or judge_text
+                if not report_data.get("consensus") and nested.get("consensus"):
+                    report_data["consensus"] = nested["consensus"]
+                if not report_data.get("recommendations") and nested.get("recommendations"):
+                    report_data["recommendations"] = nested["recommendations"]
+            elif isinstance(report_data.get("summary"), list):
+                report_data["summary"] = " ".join(str(x) for x in report_data["summary"])
     except Exception as e:
         report_data = {
             "summary": f"总结生成失败：{str(e)}",

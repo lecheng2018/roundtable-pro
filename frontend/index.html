@@ -999,11 +999,25 @@ function handleSSEEvent(data) {
     $('status').textContent = `🔄 第 ${data.round} 轮 · ${data.name} 发言中...`;
   }
   if (data.summary) {
+    // Try to extract clean text if summary looks like nested JSON
+    let summaryText = data.summary;
+    if (typeof summaryText === 'string' && summaryText.trim().startsWith('{')) {
+      try {
+        const parsed = JSON.parse(summaryText);
+        summaryText = parsed.summary || parsed.text || parsed.conclusion || summaryText;
+      } catch(e) { /* keep original */ }
+    }
+    const consensusItems = data.consensus && data.consensus.length > 0
+      ? data.consensus
+      : (typeof data.summary === 'object' ? (data.summary.consensus || []) : []);
+    const recItems = data.recommendations && data.recommendations.length > 0
+      ? data.recommendations
+      : (typeof data.summary === 'object' ? (data.summary.recommendations || []) : []);
     $('report').style.display = 'block';
     $('report').innerHTML = `<h3>📊 讨论总结</h3>
-      <div class="meta">${data.summary}</div>
-      ${data.consensus ? `<h4>✅ 共识</h4><ul>${data.consensus.map(c => '<li>'+c+'</li>').join('')}</ul>` : ''}
-      ${data.recommendations ? `<h4>💡 建议</h4><ul>${data.recommendations.map(r => '<li>'+r+'</li>').join('')}</ul>` : ''}`;
+      <div class="meta">${summaryText}</div>
+      ${consensusItems.length > 0 ? `<h4>✅ 共识</h4><ul>${consensusItems.map(c => '<li>'+c+'</li>').join('')}</ul>` : ''}
+      ${recItems.length > 0 ? `<h4>💡 建议</h4><ul>${recItems.map(r => '<li>'+r+'</li>').join('')}</ul>` : ''}`;
     $('status').textContent = '✅ 讨论完成';
   }
   if (data.done) {
